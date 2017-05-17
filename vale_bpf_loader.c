@@ -18,7 +18,7 @@
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include "vale_bpf_int.h"
-#include <uapi/linux/elf.h>
+#include <linux/elf.h>
 
 #include <bsd_glue.h>
 #include <net/netmap.h>
@@ -183,7 +183,7 @@ vale_bpf_load_elf(struct vale_bpf_vm *vm, const void *elf, size_t elf_size, char
             const Elf64_Rel *r = &rs[j];
 
             if (ELF64_R_TYPE(r->r_info) != 2) {
-                D("bad relocation type %u", ELF64_R_TYPE(r->r_info));
+                D("bad relocation type %llu", ELF64_R_TYPE(r->r_info));
                 goto error;
             }
 

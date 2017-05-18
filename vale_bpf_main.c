@@ -15,6 +15,7 @@
 #include <dev/netmap/netmap_kern.h> /* XXX Provide path in Makefile */
 
 #include "vale_bpf.h"
+#include "vale_bpf_int.h"
 #include "inc/vale_bpf_conf.h"
 
 #define MY_NAME "vale0"
@@ -71,17 +72,41 @@ static int vale_bpf_load_prog(void *code, unsigned long code_len) {
 
   write_lock(&vmlock);
 
+  if (vm->insts) {
+    D("Program already loaded, recreating vm");
+    vale_bpf_destroy(vm);
+    vm = vale_bpf_create();
+    if (vm == NULL) {
+      goto error;
+    }
+  }
+
   if (elf) {
     ret = vale_bpf_load_elf(vm, tmp, code_len, NULL);
+    if (ret < 0) {
+      goto error;
+    }
   } else {
     ret = vale_bpf_load(vm, tmp, code_len, NULL);
+    if (ret < 0) {
+      goto error;
+    }
   }
 
   write_unlock(&vmlock);
-
   kfree(tmp);
 
-  return ret;
+  D("Successfully loaded ebpf program");
+
+  return 0;
+
+error:
+  write_unlock(&vmlock);
+  kfree(tmp);
+
+  D("Failed to load ebpf program");
+
+  return -1;
 }
 
 static int vale_bpf_config(struct nm_ifreq *req) {
@@ -142,6 +167,8 @@ static void vale_bpf_fini(void) {
   if (error) {
     D("failed to release VALE bridge %d", error);
   }
+
+  D("Unloaded vale-bpf");
 
   vale_bpf_destroy(vm);
 }

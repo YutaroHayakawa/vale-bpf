@@ -10,6 +10,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <errno.h>
+#include <getopt.h>
 
 #define NETMAP_WITH_LIBS
 #include <net/netmap.h>
@@ -64,12 +65,30 @@ static void *readfile(const char *path, unsigned long maxlen, unsigned long *len
   return data;
 }
 
-#define SWITCH_NAME "vale0:"
-#define PROGNAME "./module.o"
+void usage(void) {
+  fprintf(stderr, "Usage: [-s]witch name (terminated by :) [-p]rogram name(ebpf elf)");
+}
 
 int main(int argc, char **argv) {
   int err;
   int nmfd;
+  char *sw_name, *prog_name;
+
+  int opt;
+  while ((opt = getopt(argc, argv, "s:p:")) != -1) {
+    switch (opt) {
+      case 's':
+        sw_name = strdup(optarg);
+        break;
+      case 'p':
+        prog_name = strdup(optarg);
+        break;
+      default:
+        usage();
+        return EXIT_FAILURE;
+    }
+  }
+
 
   nmfd = open("/dev/netmap", O_RDWR);
   if (nmfd < 0) {
@@ -78,11 +97,11 @@ int main(int argc, char **argv) {
 
   struct nm_ifreq req;
   memset(&req, 0, sizeof(req));
-  strcpy(req.nifr_name, SWITCH_NAME);
+  strcpy(req.nifr_name, sw_name);
 
   unsigned long length;
   void *prog;
-  prog = readfile(PROGNAME, VALE_BPF_MAX_PROG_LEN, &length);
+  prog = readfile(prog_name, VALE_BPF_MAX_PROG_LEN, &length);
   if (prog == NULL) {
     die("readfile");
   }
@@ -98,6 +117,11 @@ int main(int argc, char **argv) {
   if (err < 0) {
     die("ioctl NIOCCONFIG");
   }
+
+  free(prog);
+  free(sw_name);
+  free(prog_name);
+  close(nmfd);
 
   return 0;
 }

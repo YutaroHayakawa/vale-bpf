@@ -103,8 +103,6 @@ vale_bpf_lookup_registered_function(struct vale_bpf_vm *vm, const char *name)
 int
 vale_bpf_load(struct vale_bpf_vm *vm, const void *code, uint32_t code_len, char **errmsg)
 {
-    *errmsg = NULL;
-
     if (vm->insts) {
         D("code has already been loaded into this VM");
         return -1;
@@ -124,7 +122,6 @@ vale_bpf_load(struct vale_bpf_vm *vm, const void *code, uint32_t code_len, char 
         D("out of memory");
         return -1;
     }
-    memset(vm->insts, 0, code_len);
 
     memcpy(vm->insts, code, code_len);
     vm->num_insts = code_len/sizeof(vm->insts[0]);

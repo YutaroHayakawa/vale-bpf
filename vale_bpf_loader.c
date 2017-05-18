@@ -18,7 +18,7 @@
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include "vale_bpf_int.h"
-#include <linux/elf.h>
+#include <uapi/linux/elf.h>
 
 #include <bsd_glue.h>
 #include <net/netmap.h>

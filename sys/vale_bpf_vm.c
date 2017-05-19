@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-#include <linux/byteorder/generic.h>
 #include <linux/kernel.h>
+#include <linux/byteorder/generic.h>
 #include <linux/slab.h>
 #include <linux/types.h>
 #include <vale_bpf_int.h>
 
 #include <bsd_glue.h>
-#include <dev/netmap/netmap_kern.h>
 #include <net/netmap.h>
+#include <dev/netmap/netmap_kern.h>
 
 /* for compatibility with userspace code */
 #define UINT32_MAX ((uint32_t)-1)

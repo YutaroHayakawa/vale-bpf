@@ -47,12 +47,14 @@ DisableFormat:   false
 ExperimentalAutoDetectBinPacking: false
 ForEachMacros:   [ foreach, Q_FOREACH, BOOST_FOREACH ]
 IncludeCategories: 
-  - Regex:           '^<.*\.h>'
+  - Regex:           '<linux/kernel.h>'
     Priority:        1
-  - Regex:           '^<.*'
+  - Regex:           '<bsd_glue.h>'
     Priority:        2
-  - Regex:           '.*'
+  - Regex:           '<net/netmap.h>'
     Priority:        3
+  - Regex:           '<dev/netmap/netmap_kern.h>'
+    Priority:        4
 IndentCaseLabels: true
 IndentWidth:     2
 IndentWrappedFunctionNames: false

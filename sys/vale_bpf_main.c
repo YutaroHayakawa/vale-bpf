@@ -1,5 +1,5 @@
-#include <linux/init.h>
 #include <linux/kernel.h>
+#include <linux/init.h>
 #include <linux/module.h>
 #include <linux/rwlock.h>
 #include <linux/smp.h>
@@ -10,9 +10,9 @@
 #include <uapi/linux/ip.h>       /* struct iphdr */
 #include <uapi/linux/tcp.h>      /* struct tcphdr */
 
-#include <bsd_glue.h>               /* from netmap-release */
-#include <dev/netmap/netmap_kern.h> /* XXX Provide path in Makefile */
+#include <bsd_glue.h> /* from netmap-release */
 #include <net/netmap.h>
+#include <dev/netmap/netmap_kern.h> /* XXX Provide path in Makefile */
 
 #include <vale_bpf.h>
 #include <vale_bpf_int.h>

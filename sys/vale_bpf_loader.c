@@ -20,8 +20,8 @@
 #include <uapi/linux/elf.h>
 
 #include <bsd_glue.h>
-#include <dev/netmap/netmap_kern.h>
 #include <net/netmap.h>
+#include <dev/netmap/netmap_kern.h>
 
 #include <vale_bpf_int.h>
 

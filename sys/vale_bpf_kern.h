@@ -73,6 +73,8 @@ int vale_bpf_load_elf(struct vale_bpf_vm *vm, const void *elf, size_t elf_len);
 
 uint64_t vale_bpf_exec(const struct vale_bpf_vm *vm, void *mem, size_t mem_len);
 
-vale_bpf_jit_fn vale_bpf_compile(struct vale_bpf_vm *vm);
-
+/*
+ * Not supported for now
+ * vale_bpf_jit_fn vale_bpf_compile(struct vale_bpf_vm *vm);
+ */
 #endif

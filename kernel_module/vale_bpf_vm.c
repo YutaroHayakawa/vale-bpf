@@ -30,7 +30,7 @@
 
 #define MAX_EXT_FUNCS 64
 
-static bool validate(const struct vale_bpf_vm *vm, const struct ebpf_inst *insts, uint32_t num_insts, char **errmsg);
+static bool validate(const struct vale_bpf_vm *vm, const struct ebpf_inst *insts, uint32_t num_insts);
 static bool bounds_check(void *addr, int size, const char *type, uint16_t cur_pc, void *mem, size_t mem_len, void *stack);
 
 struct vale_bpf_vm *
@@ -101,7 +101,7 @@ vale_bpf_lookup_registered_function(struct vale_bpf_vm *vm, const char *name)
 }
 
 int
-vale_bpf_load(struct vale_bpf_vm *vm, const void *code, uint32_t code_len, char **errmsg)
+vale_bpf_load(struct vale_bpf_vm *vm, const void *code, uint32_t code_len)
 {
     if (vm->insts) {
         D("code has already been loaded into this VM");
@@ -113,7 +113,7 @@ vale_bpf_load(struct vale_bpf_vm *vm, const void *code, uint32_t code_len, char 
         return -1;
     }
 
-    if (!validate(vm, code, code_len/8, errmsg)) {
+    if (!validate(vm, code, code_len/8)) {
         return -1;
     }
 
@@ -524,7 +524,7 @@ vale_bpf_exec(const struct vale_bpf_vm *vm, void *mem, size_t mem_len)
 }
 
 static bool
-validate(const struct vale_bpf_vm *vm, const struct ebpf_inst *insts, uint32_t num_insts, char **errmsg)
+validate(const struct vale_bpf_vm *vm, const struct ebpf_inst *insts, uint32_t num_insts)
 {
     if (num_insts >= MAX_INSTS) {
         D("too many instructions (max %u)", MAX_INSTS);

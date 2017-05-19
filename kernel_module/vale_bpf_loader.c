@@ -52,7 +52,7 @@ bounds_check(struct bounds *bounds, uint64_t offset, uint64_t size)
 }
 
 int
-vale_bpf_load_elf(struct vale_bpf_vm *vm, const void *elf, size_t elf_size, char **errmsg)
+vale_bpf_load_elf(struct vale_bpf_vm *vm, const void *elf, size_t elf_size)
 {
     struct bounds b = { .base=elf, .size=elf_size };
     void *text_copy = NULL;
@@ -218,7 +218,7 @@ vale_bpf_load_elf(struct vale_bpf_vm *vm, const void *elf, size_t elf_size, char
         }
     }
 
-    int rv = vale_bpf_load(vm, text_copy, sections[text_shndx].size, errmsg);
+    int rv = vale_bpf_load(vm, text_copy, sections[text_shndx].size);
     kfree(text_copy);
     return rv;
 

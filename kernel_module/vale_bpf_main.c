@@ -86,12 +86,12 @@ static int vale_bpf_load_prog(void *code, size_t code_len) {
   }
 
   if (elf) {
-    ret = vale_bpf_load_elf(vm, tmp, code_len, NULL);
+    ret = vale_bpf_load_elf(vm, tmp, code_len);
     if (ret < 0) {
       goto error;
     }
   } else {
-    ret = vale_bpf_load(vm, tmp, code_len, NULL);
+    ret = vale_bpf_load(vm, tmp, code_len);
     if (ret < 0) {
       goto error;
     }

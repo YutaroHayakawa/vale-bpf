@@ -47,10 +47,9 @@ int vale_bpf_register(struct vale_bpf_vm *vm, unsigned int idx, const char *name
  * 'code' should point to eBPF bytecodes and 'code_len' should be the size in
  * bytes of that buffer.
  *
- * Returns 0 on success, -1 on error. In case of error a pointer to the error
- * message will be stored in 'errmsg' and should be freed by the caller.
+ * Returns 0 on success, -1 on error.
  */
-int vale_bpf_load(struct vale_bpf_vm *vm, const void *code, uint32_t code_len, char **errmsg);
+int vale_bpf_load(struct vale_bpf_vm *vm, const void *code, uint32_t code_len);
 
 /*
  * Load code from an ELF file
@@ -65,13 +64,12 @@ int vale_bpf_load(struct vale_bpf_vm *vm, const void *code, uint32_t code_len, c
  * containing the eBPF bytecodes. This is compatible with the output of
  * Clang.
  *
- * Returns 0 on success, -1 on error. In case of error a pointer to the error
- * message will be stored in 'errmsg' and should be freed by the caller.
+ * Returns 0 on success, -1 on error.
  */
-int vale_bpf_load_elf(struct vale_bpf_vm *vm, const void *elf, size_t elf_len, char **errmsg);
+int vale_bpf_load_elf(struct vale_bpf_vm *vm, const void *elf, size_t elf_len);
 
 uint64_t vale_bpf_exec(const struct vale_bpf_vm *vm, void *mem, size_t mem_len);
 
-vale_bpf_jit_fn vale_bpf_compile(struct vale_bpf_vm *vm, char **errmsg);
+vale_bpf_jit_fn vale_bpf_compile(struct vale_bpf_vm *vm);
 
 #endif

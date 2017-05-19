@@ -8,6 +8,7 @@ obj-m := vale-bpf.o
 LINUX_SRC := /lib/modules/`uname -r`/build
 
 EXTRA_CFLAGS := \
+	-O3 \
 	-DVALE_NAME=\"$(VALE_NAME)\" \
 	-I$(CURDIR) \
 	-I$(CURDIR)/../include \

@@ -19,7 +19,6 @@ EXTRA_CFLAGS := \
 all:
 	make -C $(LINUX_SRC) M=$(CURDIR) CONFIG_NETMAP=m \
 		EXTRA_CFLAGS='$(EXTRA_CFLAGS)' KBUILD_EXTRA_SYMBOLS=$(NSRC)/LINUX/Module.symvers modules
-	ls -l `find . -name \*.ko`
 
 clean:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean

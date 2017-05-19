@@ -34,8 +34,6 @@
 #include <vale_bpf_int.h>
 #include <vale_bpf_kern.h>
 
-#define MY_NAME "vale0"
-
 static struct vale_bpf_vm *vm;
 static rwlock_t vmlock;
 
@@ -162,7 +160,7 @@ static int vale_bpf_init(void) {
 
   bzero(&nmr, sizeof(nmr));
   nmr.nr_version = NETMAP_API;
-  strlcpy(nmr.nr_name, MY_NAME, sizeof(nmr.nr_name));
+  strlcpy(nmr.nr_name, VALE_NAME, sizeof(nmr.nr_name));
   strlcat(nmr.nr_name, ":", sizeof(nmr.nr_name));
   nmr.nr_cmd = NETMAP_BDG_REGOPS;
   if (netmap_bdg_ctl(&nmr, &vale_bpf_ops)) {
@@ -182,7 +180,7 @@ static void vale_bpf_fini(void) {
 
   bzero(&nmr, sizeof(nmr));
   nmr.nr_version = NETMAP_API;
-  strlcpy(nmr.nr_name, MY_NAME, sizeof(nmr.nr_name));
+  strlcpy(nmr.nr_name, VALE_NAME, sizeof(nmr.nr_name));
   strlcat(nmr.nr_name, ":", sizeof(nmr.nr_name));
   nmr.nr_cmd = NETMAP_BDG_REGOPS;
   error = netmap_bdg_ctl(&nmr, &tmp);

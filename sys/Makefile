@@ -9,6 +9,7 @@ M := $(CURDIR)
 LINUX_SRC := /lib/modules/`uname -r`/build
 
 EXTRA_CFLAGS := \
+	-DVALE_NAME=\"$(VALE_NAME)\" \
 	-I$(M) \
 	-I$(M)/../include \
 	-std=gnu11 -Wno-declaration-after-statement \

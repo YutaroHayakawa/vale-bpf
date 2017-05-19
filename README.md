@@ -39,7 +39,7 @@ use that.
 
 ## eBPF Program Semantics
 Our eBPF program loader reads first text section of ELF formatted eBPF program.
-Maps or are not supported **for now**.
+Maps are not supported **for now**.
 
 eBPF targeted C code is quite limited. For detail limitation, there are great document
 at Cillium's page (http://docs.cilium.io/en/latest/bpf/)

@@ -72,4 +72,4 @@ Thanks for that.
 
 ## License
 Copyright 2017, Yutaro Hayakawa. Licensed under the Apache License,
-Version 2.0 <LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0>.
+Version 2.0 (LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0).

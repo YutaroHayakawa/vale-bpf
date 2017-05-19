@@ -2,11 +2,10 @@
 #define _VALE_BPF_EXTERN_FUNC_
 
 #include <linux/kernel.h>
-#include <linux/types.h>
 #include <linux/smp.h>
+#include <linux/types.h>
 
 #include <vale_bpf_kern.h>
-
 
 /*
  * This file defines several external functions for
@@ -14,7 +13,6 @@
  * function, please edit this file and
  * include/vale_bpf_extern_func.h
  */
-
 
 /*
  * Structure for storing metadata such as

@@ -15,10 +15,10 @@
  */
 
 #include <linux/kernel.h>
+#include <linux/cpumask.h>
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/rwlock.h>
-#include <linux/cpumask.h>
 #include <linux/string.h>
 #include <linux/types.h>
 
@@ -27,9 +27,9 @@
 #include <dev/netmap/netmap_kern.h> /* XXX Provide path in Makefile */
 
 #include <vale_bpf.h>
+#include <vale_bpf_extern_func.h>
 #include <vale_bpf_int.h>
 #include <vale_bpf_kern.h>
-#include <vale_bpf_extern_func.h>
 
 static struct vale_bpf_vm *vm;
 static rwlock_t vmlock;
@@ -162,12 +162,14 @@ static int vale_bpf_init(void) {
   vale_bpf_register_func(vm);
 
   /* prepare metadata for each core */
-  vale_bpf_meta = kmalloc(sizeof(struct vale_bpf_metadata) * num_present_cpus(), GFP_KERNEL);
+  vale_bpf_meta = kmalloc(sizeof(struct vale_bpf_metadata) * num_present_cpus(),
+                          GFP_KERNEL);
   if (vale_bpf_meta == NULL) {
     vale_bpf_destroy(vm);
     return -ENOMEM;
   }
-  memset(vale_bpf_meta, 0, sizeof(struct vale_bpf_metadata) * num_present_cpus());
+  memset(vale_bpf_meta, 0,
+         sizeof(struct vale_bpf_metadata) * num_present_cpus());
 
   rwlock_init(&vmlock);  // initialize rwlock for vm
 

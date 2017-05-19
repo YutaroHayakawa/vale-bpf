@@ -20,11 +20,15 @@ EXTRA_CFLAGS := \
 	-I$(NSRC)/sys
 
 all:
+ifeq ($(VALE_NAME),)
+	@echo "Please specify VALE_NAME variable like VALE_NAME=vale0"
+else
 	make -C $(LINUX_SRC) M=$(CURDIR) CONFIG_NETMAP=m \
 		EXTRA_CFLAGS='$(EXTRA_CFLAGS)' KBUILD_EXTRA_SYMBOLS=$(NSRC)/LINUX/Module.symvers modules
+endif
 
 install:
-	insmod $(M)/vale-bpf.ko
+	insmod ./vale-bpf.ko
 
 clean:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean

@@ -18,13 +18,9 @@
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/rwlock.h>
-#include <linux/smp.h>
+#include <linux/cpumask.h>
 #include <linux/string.h>
 #include <linux/types.h>
-#include <uapi/linux/if_ether.h> /* struct ethhdr */
-#include <uapi/linux/in.h>       /* IPPRTO_TCP */
-#include <uapi/linux/ip.h>       /* struct iphdr */
-#include <uapi/linux/tcp.h>      /* struct tcphdr */
 
 #include <bsd_glue.h> /* from netmap-release */
 #include <net/netmap.h>
@@ -33,6 +29,7 @@
 #include <vale_bpf.h>
 #include <vale_bpf_int.h>
 #include <vale_bpf_kern.h>
+#include <vale_bpf_extern_func.h>
 
 static struct vale_bpf_vm *vm;
 static rwlock_t vmlock;
@@ -40,6 +37,11 @@ static rwlock_t vmlock;
 static u_int vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *hint,
                              struct netmap_vp_adapter *vpna) {
   uint64_t ret = NM_BDG_NOPORT;
+
+  /* set metadata for external function calls */
+  unsigned int me = smp_processor_id();
+  vale_bpf_meta[me].pkt_len = ft->ft_len;
+  vale_bpf_meta[me].src_port = netmap_bdg_idx(vpna);
 
   read_lock(&vmlock);
 
@@ -84,13 +86,12 @@ static int vale_bpf_load_prog(void *code, size_t code_len) {
     return err;
   }
 
-  if (vm->insts) {
-    D("Program already loaded, recreating vm");
-    newvm = vale_bpf_create();
-    if (newvm == NULL) {
-      goto error;
-    }
+  newvm = vale_bpf_create();
+  if (newvm == NULL) {
+    goto error;
   }
+
+  vale_bpf_register_func(newvm);
 
   if (elf) {
     ret = vale_bpf_load_elf(newvm, tmp, code_len);
@@ -156,6 +157,18 @@ static int vale_bpf_init(void) {
     return -ENOMEM;
   }
 
+  // TODO Load default eBPF program
+
+  vale_bpf_register_func(vm);
+
+  /* prepare metadata for each core */
+  vale_bpf_meta = kmalloc(sizeof(struct vale_bpf_metadata) * num_present_cpus(), GFP_KERNEL);
+  if (vale_bpf_meta == NULL) {
+    vale_bpf_destroy(vm);
+    return -ENOMEM;
+  }
+  memset(vale_bpf_meta, 0, sizeof(struct vale_bpf_metadata) * num_present_cpus());
+
   rwlock_init(&vmlock);  // initialize rwlock for vm
 
   bzero(&nmr, sizeof(nmr));
@@ -192,6 +205,8 @@ static void vale_bpf_fini(void) {
   D("Unloaded vale-bpf");
 
   vale_bpf_destroy(vm);
+
+  kfree(vale_bpf_meta);
 }
 
 module_init(vale_bpf_init);

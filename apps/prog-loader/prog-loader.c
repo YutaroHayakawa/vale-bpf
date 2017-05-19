@@ -123,7 +123,9 @@ int main(int argc, char **argv) {
     die("readfile");
   }
 
-  D("prog: %p length: %lu", prog, length);
+  size_t inst_count = length / 64;
+
+  D("prog: %p length: %lu insts: %lu", prog, length, inst_count);
 
   struct vale_bpf_req *r = (struct vale_bpf_req *)req.data;
   r->method = LOAD_PROG;

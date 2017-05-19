@@ -9,9 +9,6 @@ struct vale_bpf_req {
   void *data;
 };
 
-enum vale_bpf_method {
-  LOAD_PROG,
-  __MAX_METHOD
-};
+enum vale_bpf_method { LOAD_PROG, __MAX_METHOD };
 
 #endif

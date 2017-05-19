@@ -17,24 +17,26 @@
 #ifndef _VALE_BPF_INT_H_
 #define _VALE_BPF_INT_H_
 
-#include <vale_bpf_kern.h>
 #include <ebpf.h>
+#include <vale_bpf_kern.h>
 
 #define MAX_INSTS 65536
 #define STACK_SIZE 128
 
 struct ebpf_inst;
-typedef uint64_t (*ext_func)(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4);
+typedef uint64_t (*ext_func)(uint64_t arg0, uint64_t arg1, uint64_t arg2,
+                             uint64_t arg3, uint64_t arg4);
 
 struct vale_bpf_vm {
-    struct ebpf_inst *insts;
-    uint16_t num_insts;
-    vale_bpf_jit_fn jitted;
-    size_t jitted_size;
-    ext_func *ext_funcs;
-    const char **ext_func_names;
+  struct ebpf_inst *insts;
+  uint16_t num_insts;
+  vale_bpf_jit_fn jitted;
+  size_t jitted_size;
+  ext_func *ext_funcs;
+  const char **ext_func_names;
 };
 
-unsigned int vale_bpf_lookup_registered_function(struct vale_bpf_vm *vm, const char *name);
+unsigned int vale_bpf_lookup_registered_function(struct vale_bpf_vm *vm,
+                                                 const char *name);
 
 #endif

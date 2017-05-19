@@ -36,7 +36,8 @@ void vale_bpf_destroy(struct vale_bpf_vm *vm);
  *
  * Returns 0 on success, -1 on error.
  */
-int vale_bpf_register(struct vale_bpf_vm *vm, unsigned int idx, const char *name, void *fn);
+int vale_bpf_register(struct vale_bpf_vm *vm, unsigned int idx,
+                      const char *name, void *fn);
 
 /*
  * Load code into a VM

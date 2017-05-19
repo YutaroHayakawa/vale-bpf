@@ -1,5 +1,7 @@
 #include <arpa/inet.h>
+#include <errno.h>
 #include <fcntl.h>
+#include <getopt.h>
 #include <net/if.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -9,8 +11,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <errno.h>
-#include <getopt.h>
 
 #define NETMAP_WITH_LIBS
 #include <net/netmap.h>
@@ -39,7 +39,7 @@ static void *readfile(const char *path, size_t maxlen, size_t *len) {
   void *data = calloc(maxlen, 1);
   size_t offset = 0;
   size_t rv;
-  while ((rv = fread(data+offset, 1, maxlen-offset, file)) > 0) {
+  while ((rv = fread(data + offset, 1, maxlen - offset, file)) > 0) {
     offset += rv;
   }
 
@@ -51,8 +51,9 @@ static void *readfile(const char *path, size_t maxlen, size_t *len) {
   }
 
   if (!feof(file)) {
-    fprintf(stderr, "Failed to read %s because it is too large (max %u bytes)\n",
-            path, (unsigned)maxlen);
+    fprintf(stderr,
+            "Failed to read %s because it is too large (max %u bytes)\n", path,
+            (unsigned)maxlen);
     fclose(file);
     free(data);
     return NULL;
@@ -66,7 +67,8 @@ static void *readfile(const char *path, size_t maxlen, size_t *len) {
 }
 
 void usage(void) {
-  fprintf(stderr, "Usage: [-s]witch name (terminated by :) [-p]rogram name(ebpf elf)");
+  fprintf(stderr,
+          "Usage: [-s]witch name (terminated by :) [-p]rogram name(ebpf elf)");
 }
 
 int main(int argc, char **argv) {
@@ -88,7 +90,6 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
   }
-
 
   nmfd = open("/dev/netmap", O_RDWR);
   if (nmfd < 0) {

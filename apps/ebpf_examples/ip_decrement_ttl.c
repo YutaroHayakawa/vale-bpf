@@ -1,9 +1,9 @@
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 uint8_t mylookup(uint8_t *buf) {
   /* if ethernet type != IPv4, drop it */
-  if ((uint16_t)*(buf + 12) != 0x0008) {
+  if ((uint16_t) * (buf + 12) != 0x0008) {
     return 255;
   }
 

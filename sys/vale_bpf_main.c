@@ -1,22 +1,22 @@
 #include <linux/init.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
+#include <linux/rwlock.h>
+#include <linux/smp.h>
 #include <linux/string.h>
 #include <linux/types.h>
-#include <linux/smp.h>
 #include <uapi/linux/if_ether.h> /* struct ethhdr */
 #include <uapi/linux/in.h>       /* IPPRTO_TCP */
 #include <uapi/linux/ip.h>       /* struct iphdr */
 #include <uapi/linux/tcp.h>      /* struct tcphdr */
-#include <linux/rwlock.h>
 
-#include <bsd_glue.h> /* from netmap-release */
-#include <net/netmap.h>
+#include <bsd_glue.h>               /* from netmap-release */
 #include <dev/netmap/netmap_kern.h> /* XXX Provide path in Makefile */
+#include <net/netmap.h>
 
-#include <vale_bpf_kern.h>
-#include <vale_bpf_int.h>
 #include <vale_bpf.h>
+#include <vale_bpf_int.h>
+#include <vale_bpf_kern.h>
 
 #define MY_NAME "vale0"
 
@@ -24,7 +24,7 @@ static struct vale_bpf_vm *vm;
 static rwlock_t vmlock;
 
 static u_int vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *hint,
-    struct netmap_vp_adapter *vpna) {
+                             struct netmap_vp_adapter *vpna) {
   uint64_t ret = NM_BDG_NOPORT;
 
   read_lock(&vmlock);
@@ -69,7 +69,6 @@ static int vale_bpf_load_prog(void *code, size_t code_len) {
     kfree(tmp);
     return err;
   }
-
 
   write_lock(&vmlock);
 
@@ -133,7 +132,8 @@ static int vale_bpf_config(struct nm_ifreq *req) {
   return ret;
 }
 
-static struct netmap_bdg_ops vale_bpf_ops = { vale_bpf_lookup, vale_bpf_config, NULL };
+static struct netmap_bdg_ops vale_bpf_ops = {vale_bpf_lookup, vale_bpf_config,
+                                             NULL};
 
 static int vale_bpf_init(void) {
   struct nmreq nmr;
@@ -144,7 +144,7 @@ static int vale_bpf_init(void) {
     return -ENOMEM;
   }
 
-  rwlock_init(&vmlock); // initialize rwlock for vm
+  rwlock_init(&vmlock);  // initialize rwlock for vm
 
   bzero(&nmr, sizeof(nmr));
   nmr.nr_version = NETMAP_API;

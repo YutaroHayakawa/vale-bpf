@@ -3,3 +3,65 @@ Vale-bpf module is an extention of VALE software switch. It is written as a
 module of VALE software switch.
 
 This module makes it possible to program VALE with eBPF.
+
+JIT is not supported **for now**.
+
+## Requirements
+- clang-3.7 (for compilation of C -> eBPF program)
+- netmap (https://github.com/luigirizzo/netmap.git)
+
+netmap supports both FreeBSD and Linux, but this module supports
+only Linux **for now**. It will be supported in the future.
+
+## Installation
+Assume that you already installed netmap/VALE to your system
+and created VALE switch named vale0 by some way.
+
+```
+$ git clone <this repo>
+$ cd vale-bpf/sys
+$ export NSRC=<path to your netmap source>
+$ VALE_NAME="vale0" make
+$ sudo make install
+```
+
+Now module is loaded to vale0. However, eBPF program is not yet loaded.
+You need to load eBPF program. For that, you can use apps/prog-loader/prog-loader.c
+
+```
+$ cd apps/prog-loader.c
+$ make
+$ ./prog-loader -s vale0: -p <your own eBPF program>
+```
+
+Some example eBPF programs are available in apps/ebpf\_example. Please feel free to
+use that.
+
+## eBPF Program Semantics
+Our eBPF program loader reads first text section of ELF formatted eBPF program.
+Maps or are not supported **for now**.
+
+eBPF targeted C code is quite limited. For detail limitation, there are great document
+at Cillium's page (http://docs.cilium.io/en/latest/bpf/)
+
+But basically, it is okey you just copy and paste below template and edit it.
+
+```C
+#include <stdint.h> // uint8_t
+
+#define DROP 255
+#define BROAD_CAST 254
+
+/*
+ * Return value of this function will be a destination port
+ * of the packet. Port 255 and 254 are reserved for drop and
+ * broadcast (to all ports except incoming port).
+ *
+ * You can use any function name.
+ *
+ * - buf: pointer to the packet
+ */
+uint8_t mylookup(uint8_t *buf) {
+  return DROP;
+}
+```

@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-#ifndef VALE_BPF_INT_H
-#define VALE_BPF_INT_H
+#ifndef _VALE_BPF_INT_H_
+#define _VALE_BPF_INT_H_
 
-#include "vale_bpf_kern.h"
-#include "ebpf.h"
+#include <vale_bpf_kern.h>
+#include <ebpf.h>
 
 #define MAX_INSTS 65536
 #define STACK_SIZE 128

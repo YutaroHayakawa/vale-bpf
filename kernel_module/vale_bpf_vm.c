@@ -18,7 +18,7 @@
 #include <linux/slab.h>
 #include <linux/types.h>
 #include <linux/byteorder/generic.h>
-#include "vale_bpf_int.h"
+#include <vale_bpf_int.h>
 
 #include <bsd_glue.h>
 #include <net/netmap.h>

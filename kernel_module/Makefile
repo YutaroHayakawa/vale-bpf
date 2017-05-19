@@ -9,12 +9,14 @@ M := $(CURDIR)
 LINUX_SRC := /lib/modules/`uname -r`/build
 
 EXTRA_CFLAGS := \
+	-I$(M) \
+	-I$(M)/../include \
 	-std=gnu11 -Wno-declaration-after-statement \
+	-DCONFIG_NETMAP -DCONFIG_NETMAP_VALE \
 	-I$(LINUX_SRC)/include \
 	-I$(NSRC) \
 	-I$(NSRC)/LINUX \
-	-I$(NSRC)/sys \
-	-DCONFIG_NETMAP -DCONFIG_NETMAP_VALE
+	-I$(NSRC)/sys
 
 all:
 	make -C $(LINUX_SRC) M=$(CURDIR) CONFIG_NETMAP=m \

@@ -17,12 +17,13 @@
 #include <linux/types.h>
 #include <linux/kernel.h>
 #include <linux/slab.h>
-#include "vale_bpf_int.h"
 #include <uapi/linux/elf.h>
 
 #include <bsd_glue.h>
 #include <net/netmap.h>
 #include <dev/netmap/netmap_kern.h>
+
+#include <vale_bpf_int.h>
 
 #define MAX_SECTIONS 32
 

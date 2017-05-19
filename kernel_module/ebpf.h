@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef EBPF_H
-#define EBPF_H
+#ifndef _EBPF_H_
+#define _EBPF_H_
 
 #include <linux/types.h>
 

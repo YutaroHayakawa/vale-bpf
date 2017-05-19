@@ -27,11 +27,7 @@ static u_int vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *hint,
     struct netmap_vp_adapter *vpna) {
   uint64_t ret = NM_BDG_NOPORT;
 
-  if (!read_trylock(&vmlock)) {
-    return NM_BDG_NOPORT;
-  } else {
-    read_lock(&vmlock);
-  }
+  read_lock(&vmlock);
 
   ret = vale_bpf_exec(vm, ft->ft_buf, ft->ft_len);
   if (ret == (uint64_t)-1) {
@@ -47,12 +43,16 @@ static u_int vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *hint,
 
   read_unlock(&vmlock);
 
+  RD(1, "%llu", ret);
+
   return (u_int)ret;
 }
 
 static int vale_bpf_load_prog(void *code, size_t code_len) {
   int ret;
   bool elf = code_len >= SELFMAG && !memcmp(code, ELFMAG, SELFMAG);
+  struct vale_bpf_vm *tmpvm = NULL;
+  struct vale_bpf_vm *newvm = NULL;
 
   if (code == NULL) {
     D("code is NULL");
@@ -70,15 +70,19 @@ static int vale_bpf_load_prog(void *code, size_t code_len) {
     return err;
   }
 
+
   write_lock(&vmlock);
 
   if (vm->insts) {
     D("Program already loaded, recreating vm");
-    vale_bpf_destroy(vm);
-    vm = vale_bpf_create();
+    newvm = vale_bpf_create();
     if (vm == NULL) {
       goto error;
     }
+
+    /* swap vm instance */
+    tmpvm = vm;
+    vm = newvm;
   }
 
   if (elf) {
@@ -94,6 +98,11 @@ static int vale_bpf_load_prog(void *code, size_t code_len) {
   }
 
   write_unlock(&vmlock);
+
+  if (tmpvm != NULL) {
+    vale_bpf_destroy(tmpvm);
+  }
+
   kfree(tmp);
 
   D("Successfully loaded ebpf program");

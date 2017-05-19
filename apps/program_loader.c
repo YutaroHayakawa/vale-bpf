@@ -16,7 +16,7 @@
 #include <net/netmap.h>
 #include <net/netmap_user.h>
 
-#include <vale_bpf_conf.h>
+#include <vale_bpf.h>
 
 void die(const char *msg) {
   perror(msg);

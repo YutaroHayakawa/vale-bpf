@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef VALE_BPF_H
-#define VALE_BPF_H
+#ifndef _VALE_BPF_KERN_H_
+#define _VALE_BPF_KERN_H_
 
 #include <linux/types.h>
 

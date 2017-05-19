@@ -1,5 +1,5 @@
-#ifndef _VALE_BPF_CONF_H_
-#define _VALE_BPF_CONF_H_
+#ifndef _VALE_BPF_H_
+#define _VALE_BPF_H_
 
 #define VALE_BPF_MAX_PROG_LEN 1024 * 1024
 

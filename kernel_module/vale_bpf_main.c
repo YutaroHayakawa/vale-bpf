@@ -14,9 +14,9 @@
 #include <net/netmap.h>
 #include <dev/netmap/netmap_kern.h> /* XXX Provide path in Makefile */
 
-#include "vale_bpf.h"
+#include "vale_bpf_kern.h"
 #include "vale_bpf_int.h"
-#include "inc/vale_bpf_conf.h"
+#include "../include/vale_bpf.h"
 
 #define MY_NAME "vale0"
 

@@ -17,7 +17,7 @@
 #ifndef VALE_BPF_INT_H
 #define VALE_BPF_INT_H
 
-#include "vale_bpf.h"
+#include "vale_bpf_kern.h"
 #include "ebpf.h"
 
 #define MAX_INSTS 65536
@@ -35,7 +35,6 @@ struct vale_bpf_vm {
     const char **ext_func_names;
 };
 
-char *vale_bpf_error(const char *fmt, ...);
 unsigned int vale_bpf_lookup_registered_function(struct vale_bpf_vm *vm, const char *name);
 
 #endif

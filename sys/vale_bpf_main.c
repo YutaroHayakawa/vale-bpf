@@ -70,38 +70,36 @@ static int vale_bpf_load_prog(void *code, size_t code_len) {
     return err;
   }
 
-  write_lock(&vmlock);
-
   if (vm->insts) {
     D("Program already loaded, recreating vm");
     newvm = vale_bpf_create();
-    if (vm == NULL) {
+    if (newvm == NULL) {
       goto error;
     }
-
-    /* swap vm instance */
-    tmpvm = vm;
-    vm = newvm;
   }
 
   if (elf) {
-    ret = vale_bpf_load_elf(vm, tmp, code_len);
+    ret = vale_bpf_load_elf(newvm, tmp, code_len);
     if (ret < 0) {
       goto error;
     }
   } else {
-    ret = vale_bpf_load(vm, tmp, code_len);
+    ret = vale_bpf_load(newvm, tmp, code_len);
     if (ret < 0) {
       goto error;
     }
   }
 
+  write_lock(&vmlock);
+
+  /* swap vm instance */
+  tmpvm = vm;
+  vm = newvm;
+
   write_unlock(&vmlock);
 
-  if (tmpvm != NULL) {
-    vale_bpf_destroy(tmpvm);
-  }
-
+  /* Cleanup old vm and temporary code */
+  vale_bpf_destroy(tmpvm);
   kfree(tmp);
 
   D("Successfully loaded ebpf program");

@@ -1,3 +1,4 @@
+/* This file is for eBPF targeted C code */
 #ifndef _VALE_BPF_EXTERN_FUNC_H_
 #define _VALE_BPF_EXTERN_FUNC_H_
 

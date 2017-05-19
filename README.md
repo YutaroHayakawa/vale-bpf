@@ -48,6 +48,7 @@ But basically, it is okey you just copy and paste below template and edit it.
 
 ```C
 #include <stdint.h> // uint8_t
+#include <_vale_bpf_extern_func.h>
 
 #define DROP 255
 #define BROAD_CAST 254
@@ -62,6 +63,12 @@ But basically, it is okey you just copy and paste below template and edit it.
  * - buf: pointer to the packet
  */
 uint8_t mylookup(uint8_t *buf) {
+  /*
+   * You can get packet length or source port by calling external
+   * function which is defined in sys/vale_bpf_extern_func.h
+   */
+  uint16_t pkt_len = get_pkt_len();
+  uint8_t sport = get_src_port();
   return DROP;
 }
 ```

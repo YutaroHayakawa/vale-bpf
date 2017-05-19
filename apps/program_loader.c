@@ -23,7 +23,7 @@ void die(const char *msg) {
   exit(EXIT_FAILURE);
 }
 
-static void *readfile(const char *path, unsigned long maxlen, unsigned long *len) {
+static void *readfile(const char *path, size_t maxlen, size_t *len) {
   FILE *file;
   if (!strcmp(path, "-")) {
     file = fdopen(STDIN_FILENO, "r");
@@ -37,8 +37,8 @@ static void *readfile(const char *path, unsigned long maxlen, unsigned long *len
   }
 
   void *data = calloc(maxlen, 1);
-  unsigned long offset = 0;
-  unsigned long rv;
+  size_t offset = 0;
+  size_t rv;
   while ((rv = fread(data+offset, 1, maxlen-offset, file)) > 0) {
     offset += rv;
   }
@@ -99,7 +99,7 @@ int main(int argc, char **argv) {
   memset(&req, 0, sizeof(req));
   strcpy(req.nifr_name, sw_name);
 
-  unsigned long length;
+  size_t length;
   void *prog;
   prog = readfile(prog_name, VALE_BPF_MAX_PROG_LEN, &length);
   if (prog == NULL) {

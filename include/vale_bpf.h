@@ -5,7 +5,7 @@
 
 struct vale_bpf_req {
   uint8_t method;
-  unsigned long len;
+  size_t len;
   void *data;
 };
 

@@ -50,7 +50,7 @@ static u_int vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *hint,
   return (u_int)ret;
 }
 
-static int vale_bpf_load_prog(void *code, unsigned long code_len) {
+static int vale_bpf_load_prog(void *code, size_t code_len) {
   int ret;
   bool elf = code_len >= SELFMAG && !memcmp(code, ELFMAG, SELFMAG);
 
@@ -64,7 +64,7 @@ static int vale_bpf_load_prog(void *code, unsigned long code_len) {
     return -ENOMEM;
   }
 
-  unsigned long err = copy_from_user(tmp, code, code_len);
+  size_t err = copy_from_user(tmp, code, code_len);
   if (err != 0) {
     kfree(tmp);
     return err;

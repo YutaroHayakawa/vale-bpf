@@ -40,7 +40,7 @@ use that.
 Our eBPF program loader reads first text section of ELF formatted eBPF program.
 Maps are not supported **for now**.
 
-eBPF targeted C code is quite limited. For detail limitation, there are great document
+eBPF targeted C code is quite limited. For detail limitation, there are great documents
 at Cillium's page (http://docs.cilium.io/en/latest/bpf/)
 
 But basically, it is okey you just copy and paste below template and edit it.

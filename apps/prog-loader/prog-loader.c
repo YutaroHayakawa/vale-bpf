@@ -133,9 +133,10 @@ int main(int argc, char **argv) {
 
   struct vale_bpf_req *r = (struct vale_bpf_req *)req.data;
   r->method = LOAD_PROG;
-  r->len = length;
-  r->jit = jit;
-  r->code = prog;
+  r->len = sizeof(struct vale_bpf_req);
+  r->prog_data.jit = jit;
+  r->prog_data.code = prog;
+  r->prog_data.code_len = length;
 
   err = ioctl(nmfd, NIOCCONFIG, &req);
   if (err < 0) {

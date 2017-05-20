@@ -7,10 +7,11 @@ struct vale_bpf_req {
   uint8_t method;
   size_t len;
   union {
-    struct {
+    struct vale_bpf_load_prog_data {
       int jit;
       void *code;
-    };
+      size_t code_len;
+    } prog_data;
   };
 };
 

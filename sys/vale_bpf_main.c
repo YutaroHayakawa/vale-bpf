@@ -33,7 +33,7 @@
 
 static struct vale_bpf_vm *vm;
 static rwlock_t vmlock;
-static int jit;
+static int jit_mode;
 
 static u_int vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *hint,
                              struct netmap_vp_adapter *vpna) {
@@ -46,7 +46,7 @@ static u_int vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *hint,
 
   read_lock(&vmlock);
 
-  if (jit) {
+  if (jit_mode) {
     ret = vm->jitted(ft->ft_buf, ft->ft_len);
   } else {
     ret = vale_bpf_exec(vm, ft->ft_buf, ft->ft_len);
@@ -70,15 +70,13 @@ static u_int vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *hint,
   return (u_int)ret;
 }
 
-static int vale_bpf_load_prog(void *data, size_t data_len) {
+static int vale_bpf_load_prog(void *code, size_t code_len, int jit) {
   int ret;
-  struct vale_bpf_load_prog_data *d = (struct vale_bpf_load_prog_data *)data;
-  size_t code_len = data_len - sizeof(int);
-  bool elf = code_len >= SELFMAG && !memcmp(d->code, ELFMAG, SELFMAG);
+  bool elf = code_len >= SELFMAG && !memcmp(code, ELFMAG, SELFMAG);
   struct vale_bpf_vm *tmpvm = NULL;
   struct vale_bpf_vm *newvm = NULL;
 
-  if (d->code == NULL) {
+  if (code == NULL) {
     D("code is NULL");
     return -1;
   }
@@ -88,7 +86,7 @@ static int vale_bpf_load_prog(void *data, size_t data_len) {
     return -1;
   }
 
-  size_t err = copy_from_user(tmp, d->code, code_len);
+  size_t err = copy_from_user(tmp, code, code_len);
   if (err != 0) {
     kfree(tmp);
     return -1;
@@ -116,7 +114,7 @@ static int vale_bpf_load_prog(void *data, size_t data_len) {
     }
   }
 
-  if (d->jit) {
+  if (jit) {
     vale_bpf_jit_fn fn = vale_bpf_compile(newvm);
     if (fn == NULL) {
       D("Failed to compile");
@@ -135,7 +133,7 @@ static int vale_bpf_load_prog(void *data, size_t data_len) {
   write_unlock(&vmlock);
 
   /* set jit flag */
-  jit = d->jit;
+  jit_mode = jit;
 
   /* Cleanup old vm and temporary code */
   vale_bpf_destroy(tmpvm);
@@ -152,7 +150,8 @@ static int vale_bpf_config(struct nm_ifreq *req) {
 
   switch (r->method) {
     case LOAD_PROG:
-      ret = vale_bpf_load_prog(r->data, r->len);
+      ret = vale_bpf_load_prog(r->prog_data.code,
+          r->prog_data.code_len, r->prog_data.jit);
       break;
     default:
       ret = -1;

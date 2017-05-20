@@ -54,7 +54,7 @@ static u_int vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *hint,
 
   if (ret == (uint64_t)-1) {
     read_unlock(&vmlock);
-    ND("vale_bpf_exec failed.");
+    RD(1, "vale_bpf_exec failed.");
     return NM_BDG_NOPORT;
   }
 
@@ -65,7 +65,7 @@ static u_int vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *hint,
 
   read_unlock(&vmlock);
 
-  ND("dst: %llu", ret);
+  RD(1, "dst: %llu", ret);
 
   return (u_int)ret;
 }

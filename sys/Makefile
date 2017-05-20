@@ -1,6 +1,7 @@
 vale-bpf-objs := \
 		vale_bpf_loader.o \
 		vale_bpf_vm.o \
+		vale_bpf_jit_x86_64.o \
 		vale_bpf_main.o
 
 obj-m := vale-bpf.o

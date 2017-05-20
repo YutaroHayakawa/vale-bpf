@@ -26,9 +26,7 @@
 #include <net/netmap.h>
 #include <dev/netmap/netmap_kern.h>
 
-/* for compatibility with userspace code */
-#define UINT32_MAX ((uint32_t)-1)
-#define UINT64_MAX ((uint64_t)-1)
+#include <vale_bpf_limits.h>
 
 #define MAX_EXT_FUNCS 64
 

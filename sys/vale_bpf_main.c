@@ -33,6 +33,7 @@
 
 static struct vale_bpf_vm *vm;
 static rwlock_t vmlock;
+static int jit;
 
 static u_int vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *hint,
                              struct netmap_vp_adapter *vpna) {
@@ -45,7 +46,12 @@ static u_int vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *hint,
 
   read_lock(&vmlock);
 
-  ret = vale_bpf_exec(vm, ft->ft_buf, ft->ft_len);
+  if (jit) {
+    ret = vm->jitted(ft->ft_buf, ft->ft_len);
+  } else {
+    ret = vale_bpf_exec(vm, ft->ft_buf, ft->ft_len);
+  }
+
   if (ret == (uint64_t)-1) {
     read_unlock(&vmlock);
     ND("vale_bpf_exec failed.");
@@ -64,31 +70,34 @@ static u_int vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *hint,
   return (u_int)ret;
 }
 
-static int vale_bpf_load_prog(void *code, size_t code_len) {
+static int vale_bpf_load_prog(void *data, size_t data_len) {
   int ret;
-  bool elf = code_len >= SELFMAG && !memcmp(code, ELFMAG, SELFMAG);
+  struct vale_bpf_load_prog_data *d = (struct vale_bpf_load_prog_data *)data;
+  size_t code_len = data_len - sizeof(int);
+  bool elf = code_len >= SELFMAG && !memcmp(d->code, ELFMAG, SELFMAG);
   struct vale_bpf_vm *tmpvm = NULL;
   struct vale_bpf_vm *newvm = NULL;
 
-  if (code == NULL) {
+  if (d->code == NULL) {
     D("code is NULL");
-    return -EINVAL;
+    return -1;
   }
 
   void *tmp = kmalloc(code_len, GFP_KERNEL);
   if (tmp == NULL) {
-    return -ENOMEM;
+    return -1;
   }
 
-  size_t err = copy_from_user(tmp, code, code_len);
+  size_t err = copy_from_user(tmp, d->code, code_len);
   if (err != 0) {
     kfree(tmp);
-    return err;
+    return -1;
   }
 
   newvm = vale_bpf_create();
   if (newvm == NULL) {
-    goto error;
+    kfree(tmp);
+    return -1;
   }
 
   vale_bpf_register_func(newvm);
@@ -96,12 +105,24 @@ static int vale_bpf_load_prog(void *code, size_t code_len) {
   if (elf) {
     ret = vale_bpf_load_elf(newvm, tmp, code_len);
     if (ret < 0) {
-      goto error;
+      kfree(tmp);
+      return -1;
     }
   } else {
     ret = vale_bpf_load(newvm, tmp, code_len);
     if (ret < 0) {
-      goto error;
+      kfree(tmp);
+      return -1;
+    }
+  }
+
+  if (d->jit) {
+    vale_bpf_jit_fn fn = vale_bpf_compile(newvm);
+    if (fn == NULL) {
+      D("Failed to compile");
+      vale_bpf_destroy(newvm);
+      kfree(tmp);
+      return -1;
     }
   }
 
@@ -113,21 +134,16 @@ static int vale_bpf_load_prog(void *code, size_t code_len) {
 
   write_unlock(&vmlock);
 
+  /* set jit flag */
+  jit = d->jit;
+
   /* Cleanup old vm and temporary code */
   vale_bpf_destroy(tmpvm);
   kfree(tmp);
 
-  D("Successfully loaded ebpf program");
+  D("Successfully loaded ebpf program, JIT: %s", jit ? "true" : "false");
 
   return 0;
-
-error:
-  write_unlock(&vmlock);
-  kfree(tmp);
-
-  D("Failed to load ebpf program");
-
-  return -1;
 }
 
 static int vale_bpf_config(struct nm_ifreq *req) {

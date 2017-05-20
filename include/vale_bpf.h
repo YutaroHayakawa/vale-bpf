@@ -6,7 +6,12 @@
 struct vale_bpf_req {
   uint8_t method;
   size_t len;
-  void *data;
+  union {
+    struct {
+      int jit;
+      void *code;
+    };
+  };
 };
 
 enum vale_bpf_method { LOAD_PROG, __MAX_METHOD };

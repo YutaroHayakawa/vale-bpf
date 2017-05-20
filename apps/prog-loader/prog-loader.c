@@ -84,22 +84,26 @@ static void *readfile(const char *path, size_t maxlen, size_t *len) {
 
 void usage(void) {
   fprintf(stderr,
-          "Usage: [-s]witch name (terminated by :) [-p]rogram name(ebpf elf)");
+          "Usage: [-s]witch name (terminated by :) [-p]rogram name(ebpf elf) [-j]it");
 }
 
 int main(int argc, char **argv) {
   int err;
   int nmfd;
+  int jit = 0;
   char *sw_name, *prog_name;
 
   int opt;
-  while ((opt = getopt(argc, argv, "s:p:")) != -1) {
+  while ((opt = getopt(argc, argv, "js:p:")) != -1) {
     switch (opt) {
       case 's':
         sw_name = strdup(optarg);
         break;
       case 'p':
         prog_name = strdup(optarg);
+        break;
+      case 'j':
+        jit = 1;
         break;
       default:
         usage();
@@ -130,7 +134,8 @@ int main(int argc, char **argv) {
   struct vale_bpf_req *r = (struct vale_bpf_req *)req.data;
   r->method = LOAD_PROG;
   r->len = length;
-  r->data = prog;
+  r->jit = jit;
+  r->code = prog;
 
   err = ioctl(nmfd, NIOCCONFIG, &req);
   if (err < 0) {

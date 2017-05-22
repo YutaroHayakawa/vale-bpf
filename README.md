@@ -28,7 +28,7 @@ You need to load eBPF program. For that, you can use apps/prog-loader/prog-loade
 ```
 $ cd apps/prog-loader.c
 $ make
-$ ./prog-loader -s vale0: -p <your own eBPF program> -j(enable this flag if you want to use jit)
+$ ./prog-loader -s vale0: -p <path to your own eBPF program> -j(enable this flag if you want to use jit)
 ```
 
 Some example eBPF programs are available in apps/ebpf\_example. Please feel free to

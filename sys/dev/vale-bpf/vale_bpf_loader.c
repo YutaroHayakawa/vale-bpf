@@ -16,12 +16,43 @@
  * limitations under the License.
  */
 
+#if defined(linux)
+
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include <linux/types.h>
 #include <uapi/linux/elf.h>
-
 #include <bsd_glue.h>
+
+#elif defined(__FreeBSD__)
+
+#include <sys/types.h>
+#include <sys/errno.h>
+#include <sys/param.h>	/* defines used in kernel.h */
+#include <sys/kernel.h>	/* types used in module initialization */
+#include <sys/conf.h>	/* cdevsw struct, UID, GID */
+#include <sys/sockio.h>
+#include <sys/socketvar.h>	/* struct socket */
+#include <sys/malloc.h>
+#include <sys/poll.h>
+#include <sys/rwlock.h>
+#include <sys/socket.h> /* sockaddrs */
+#include <sys/selinfo.h>
+#include <sys/sysctl.h>
+#include <net/if.h>
+#include <net/if_var.h>
+#include <net/bpf.h>		/* BIOCIMMEDIATE */
+#include <machine/bus.h>	/* bus_dmamap_* */
+#include <sys/endian.h>
+#include <sys/refcount.h>
+#include <sys/elf.h>
+
+#else
+
+#error Unsupported platform
+
+#endif
+
 #include <net/netmap.h>
 #include <dev/netmap/netmap_kern.h>
 
@@ -49,7 +80,9 @@ static const void *bounds_check(struct bounds *bounds, uint64_t offset,
   if (offset + size > bounds->size || offset + size < offset) {
     return NULL;
   }
-  return bounds->base + offset;
+
+  /* cast for non GNU code */
+  return (const char *)bounds->base + offset;
 }
 
 int vale_bpf_load_elf(struct vale_bpf_vm *vm, const void *elf,
@@ -144,7 +177,7 @@ int vale_bpf_load_elf(struct vale_bpf_vm *vm, const void *elf,
   struct section *text = &sections[text_shndx];
 
   /* May need to modify text for relocations, so make a copy */
-  text_copy = kmalloc(text->size, GFP_KERNEL);
+  text_copy = vale_bpf_os_malloc(text->size);
   if (!text_copy) {
     D("failed to allocate memory");
     goto error;
@@ -184,7 +217,7 @@ int vale_bpf_load_elf(struct vale_bpf_vm *vm, const void *elf,
       const Elf64_Rel *r = &rs[j];
 
       if (ELF64_R_TYPE(r->r_info) != 2) {
-        D("bad relocation type %llu", ELF64_R_TYPE(r->r_info));
+        D("bad relocation type %llu", (unsigned long long)ELF64_R_TYPE(r->r_info));
         goto error;
       }
 
@@ -214,15 +247,16 @@ int vale_bpf_load_elf(struct vale_bpf_vm *vm, const void *elf,
         goto error;
       }
 
-      *(uint32_t *)(text_copy + r->r_offset + 4) = imm;
+      /* cast for non GNU code */
+      *(uint32_t *)((char *)text_copy + r->r_offset + 4) = imm;
     }
   }
 
   int rv = vale_bpf_load(vm, text_copy, sections[text_shndx].size);
-  kfree(text_copy);
+  vale_bpf_os_free(text_copy);
   return rv;
 
 error:
-  kfree(text_copy);
+  vale_bpf_os_free(text_copy);
   return -1;
 }

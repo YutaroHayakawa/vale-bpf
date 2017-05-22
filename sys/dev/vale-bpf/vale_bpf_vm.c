@@ -16,19 +16,43 @@
  * limitations under the License.
  */
 
+#if defined(linux)
 #include <linux/kernel.h>
 #include <linux/byteorder/generic.h>
 #include <linux/slab.h>
 #include <linux/types.h>
 #include <linux/vmalloc.h>
-#include <vale_bpf_int.h>
-
 #include <bsd_glue.h>
+#include <vale_bpf_bsd_glue.h>
+#elif defined(__FreeBSD__)
+#include <sys/types.h>
+#include <sys/errno.h>
+#include <sys/param.h>	/* defines used in kernel.h */
+#include <sys/kernel.h>	/* types used in module initialization */
+#include <sys/conf.h>	/* cdevsw struct, UID, GID */
+#include <sys/sockio.h>
+#include <sys/socketvar.h>	/* struct socket */
+#include <sys/malloc.h>
+#include <sys/poll.h>
+#include <sys/rwlock.h>
+#include <sys/socket.h> /* sockaddrs */
+#include <sys/selinfo.h>
+#include <sys/sysctl.h>
+#include <net/if.h>
+#include <net/if_var.h>
+#include <net/bpf.h>		/* BIOCIMMEDIATE */
+#include <machine/bus.h>	/* bus_dmamap_* */
+#include <sys/endian.h>
+#include <sys/refcount.h>
+#else
+#error Unsupported platform
+#endif
+
 #include <net/netmap.h>
 #include <dev/netmap/netmap_kern.h>
 
 #include <vale_bpf_limits.h>
-#include <vale_bpf_bsd_glue.h>
+#include <vale_bpf_int.h>
 
 #define MAX_EXT_FUNCS 64
 
@@ -39,14 +63,14 @@ static bool bounds_check(void *addr, int size, const char *type,
                          void *stack);
 
 struct vale_bpf_vm *vale_bpf_create(void) {
-  struct vale_bpf_vm *vm = kmalloc(sizeof(*vm), GFP_KERNEL);
+  struct vale_bpf_vm *vm = vale_bpf_os_malloc(sizeof(*vm));
   if (vm == NULL) {
     return NULL;
   }
 
   bzero(vm, sizeof(*vm));
 
-  vm->ext_funcs = kmalloc(MAX_EXT_FUNCS * sizeof(*vm->ext_funcs), GFP_KERNEL);
+  vm->ext_funcs = vale_bpf_os_malloc(MAX_EXT_FUNCS * sizeof(*vm->ext_funcs));
   if (vm->ext_funcs == NULL) {
     vale_bpf_destroy(vm);
     return NULL;
@@ -55,7 +79,7 @@ struct vale_bpf_vm *vale_bpf_create(void) {
   bzero(vm->ext_funcs, MAX_EXT_FUNCS * sizeof(*vm->ext_funcs));
 
   vm->ext_func_names =
-      kmalloc(MAX_EXT_FUNCS * sizeof(*vm->ext_func_names), GFP_KERNEL);
+      vale_bpf_os_malloc(MAX_EXT_FUNCS * sizeof(*vm->ext_func_names));
   if (vm->ext_func_names == NULL) {
     vale_bpf_destroy(vm);
     return NULL;
@@ -67,14 +91,17 @@ struct vale_bpf_vm *vale_bpf_create(void) {
 }
 
 void vale_bpf_destroy(struct vale_bpf_vm *vm) {
+  /* JIT is not supported in FreeBSD for now */
+#if defined(linux)
   if (vm->jitted) {
       vfree(vm->jitted);
   }
+#endif
 
-  kfree(vm->insts);
-  kfree(vm->ext_funcs);
-  kfree(vm->ext_func_names);
-  kfree(vm);
+  vale_bpf_os_free(vm->insts);
+  vale_bpf_os_free(vm->ext_funcs);
+  vale_bpf_os_free(vm->ext_func_names);
+  vale_bpf_os_free(vm);
 }
 
 int vale_bpf_register(struct vale_bpf_vm *vm, unsigned int idx,
@@ -115,7 +142,7 @@ int vale_bpf_load(struct vale_bpf_vm *vm, const void *code, uint32_t code_len) {
     return -1;
   }
 
-  vm->insts = kmalloc(code_len, GFP_KERNEL);
+  vm->insts = vale_bpf_os_malloc(code_len);
   if (vm->insts == NULL) {
     D("out of memory");
     return -1;
@@ -367,14 +394,16 @@ uint64_t vale_bpf_exec(const struct vale_bpf_vm *vm, void *mem,
  */
 #define BOUNDS_CHECK_LOAD(size)                                          \
   do {                                                                   \
-    if (!bounds_check((void *)reg[inst.src] + inst.offset, size, "load", \
+    /* cast for non GNU source */                                         \
+    if (!bounds_check((char *)reg[inst.src] + inst.offset, size, "load", \
                       cur_pc, mem, mem_len, stack)) {                    \
       return UINT64_MAX;                                                 \
     }                                                                    \
   } while (0)
 #define BOUNDS_CHECK_STORE(size)                                          \
   do {                                                                    \
-    if (!bounds_check((void *)reg[inst.dst] + inst.offset, size, "store", \
+    /* cast for non GNU source */                                         \
+    if (!bounds_check((char *)reg[inst.dst] + inst.offset, size, "store", \
                       cur_pc, mem, mem_len, stack)) {                     \
       return UINT64_MAX;                                                  \
     }                                                                     \
@@ -694,10 +723,12 @@ static bool validate(const struct vale_bpf_vm *vm,
 static bool bounds_check(void *addr, int size, const char *type,
                          uint16_t cur_pc, void *mem, size_t mem_len,
                          void *stack) {
-  if (mem && (addr >= mem && (addr + size) <= (mem + mem_len))) {
+  /* cast for non GNU source */
+  if (mem && (addr >= mem && ((char *)addr + size) <= ((char *)mem + mem_len))) {
     /* Context access */
     return true;
-  } else if (addr >= stack && (addr + size) <= (stack + STACK_SIZE)) {
+  /* cast for non GNU source */
+  } else if (addr >= stack && ((char *)addr + size) <= ((char *)stack + STACK_SIZE)) {
     /* Stack access */
     return true;
   } else {

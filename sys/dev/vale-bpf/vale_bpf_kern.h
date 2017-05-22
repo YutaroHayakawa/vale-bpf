@@ -19,7 +19,13 @@
 #ifndef _VALE_BPF_KERN_H_
 #define _VALE_BPF_KERN_H_
 
+#if defined(linux)
 #include <linux/types.h>
+#elif defined(__FreeBSD__)
+#include <sys/types.h>
+#else
+#error Unsupported platform
+#endif
 
 struct vale_bpf_vm;
 typedef uint64_t (*vale_bpf_jit_fn)(void *mem, size_t mem_len);
@@ -73,5 +79,14 @@ int vale_bpf_load_elf(struct vale_bpf_vm *vm, const void *elf, size_t elf_len);
 
 uint64_t vale_bpf_exec(const struct vale_bpf_vm *vm, void *mem, size_t mem_len);
 
+#if defined(linux)
 vale_bpf_jit_fn vale_bpf_compile(struct vale_bpf_vm *vm);
+#endif
+
+/* OS depended functions */
+void *vale_bpf_os_malloc(size_t size);
+void vale_bpf_os_free(void *mem);
+u_int vale_bpf_ncpus(void);
+int vale_bpf_cur_cpu(void);
+
 #endif

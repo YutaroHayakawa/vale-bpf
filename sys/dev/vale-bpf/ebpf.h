@@ -19,7 +19,13 @@
 #ifndef _EBPF_H_
 #define _EBPF_H_
 
+#if defined(linux)
 #include <linux/types.h>
+#elif defined(__FreeBSD__)
+#include <sys/types.h>
+#else
+#error Unsupported platform
+#endif
 
 /* eBPF definitions */
 

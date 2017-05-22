@@ -1,7 +1,7 @@
-CFLAGS := -I../../include
+CFLAGS := -I../../sys/net
 
 prog-loader:
-	gcc -o prog-loader $(CFLAGS) prog-loader.c
+	$(CC) -o prog-loader $(CFLAGS) prog-loader.c
 
 clean:
 	rm prog-loader

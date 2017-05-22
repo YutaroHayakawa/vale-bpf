@@ -14,15 +14,38 @@
  * limitations under the License.
  */
 
+#if defined(linux)
+
 #include <linux/kernel.h>
 #include <linux/cpumask.h>
 #include <linux/init.h>
 #include <linux/module.h>
-#include <linux/rwlock.h>
 #include <linux/string.h>
 #include <linux/types.h>
+#include <bsd_glue.h>
 
-#include <bsd_glue.h> /* from netmap-release */
+#elif defined(__FreeBSD__)
+
+#include <sys/param.h>
+#include <sys/module.h>
+#include <sys/types.h>
+#include <sys/cdefs.h>
+#include <sys/kernel.h>
+#include <sys/conf.h>
+#include <sys/malloc.h>
+#include <sys/socket.h>
+#include <sys/selinfo.h>
+#include <sys/elf.h>
+#include <net/if.h>
+#include <net/if_var.h>
+#include <machine/bus.h>
+
+#else
+
+#error Unsupported platform
+
+#endif
+
 #include <net/netmap.h>
 #include <dev/netmap/netmap_kern.h> /* XXX Provide path in Makefile */
 
@@ -32,7 +55,6 @@
 #include <vale_bpf_kern.h>
 
 static struct vale_bpf_vm *vm;
-static rwlock_t vmlock;
 static int jit_mode;
 
 static u_int vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *hint,
@@ -40,11 +62,9 @@ static u_int vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *hint,
   uint64_t ret = NM_BDG_NOPORT;
 
   /* set metadata for external function calls */
-  unsigned int me = smp_processor_id();
+  unsigned int me = vale_bpf_cur_cpu();
   vale_bpf_meta[me].pkt_len = &(ft->ft_len);
   vale_bpf_meta[me].src_port = netmap_bdg_idx(vpna);
-
-  read_lock(&vmlock);
 
   if (jit_mode) {
     ret = vm->jitted(ft->ft_buf, ft->ft_len);
@@ -53,19 +73,15 @@ static u_int vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *hint,
   }
 
   if (ret == (uint64_t)-1) {
-    read_unlock(&vmlock);
-    ND("vale_bpf_exec failed.");
+    RD(1, "vale_bpf_exec failed.");
     return NM_BDG_NOPORT;
   }
 
   if (ret > NM_BDG_NOPORT) {
-    read_unlock(&vmlock);
     return NM_BDG_NOPORT;
   }
 
-  read_unlock(&vmlock);
-
-  ND("dst: %llu", ret);
+  RD(1, "dst: %lu", ret);
 
   return (u_int)ret;
 }
@@ -81,20 +97,20 @@ static int vale_bpf_load_prog(void *code, size_t code_len, int jit) {
     return -1;
   }
 
-  void *tmp = kmalloc(code_len, GFP_KERNEL);
+  void *tmp = vale_bpf_os_malloc(code_len);
   if (tmp == NULL) {
     return -1;
   }
 
   size_t err = copyin(code, tmp, code_len);
   if (err != 0) {
-    kfree(tmp);
+    vale_bpf_os_free(tmp);
     return -1;
   }
 
   newvm = vale_bpf_create();
   if (newvm == NULL) {
-    kfree(tmp);
+    vale_bpf_os_free(tmp);
     return -1;
   }
 
@@ -103,41 +119,39 @@ static int vale_bpf_load_prog(void *code, size_t code_len, int jit) {
   if (elf) {
     ret = vale_bpf_load_elf(newvm, tmp, code_len);
     if (ret < 0) {
-      kfree(tmp);
+      vale_bpf_os_free(tmp);
       return -1;
     }
   } else {
     ret = vale_bpf_load(newvm, tmp, code_len);
     if (ret < 0) {
-      kfree(tmp);
+      vale_bpf_os_free(tmp);
       return -1;
     }
   }
 
+#if defined(linux)
   if (jit) {
     vale_bpf_jit_fn fn = vale_bpf_compile(newvm);
     if (fn == NULL) {
       D("Failed to compile");
       vale_bpf_destroy(newvm);
-      kfree(tmp);
+      vale_bpf_os_free(tmp);
       return -1;
     }
   }
-
-  write_lock(&vmlock);
+#endif
 
   /* swap vm instance */
   tmpvm = vm;
   vm = newvm;
-
-  write_unlock(&vmlock);
 
   /* set jit flag */
   jit_mode = jit;
 
   /* Cleanup old vm and temporary code */
   vale_bpf_destroy(tmpvm);
-  kfree(tmp);
+  vale_bpf_os_free(tmp);
 
   D("Successfully loaded ebpf program, JIT: %s", jit ? "true" : "false");
 
@@ -177,16 +191,13 @@ static int vale_bpf_init(void) {
   vale_bpf_register_func(vm);
 
   /* prepare metadata for each core */
-  vale_bpf_meta = kmalloc(sizeof(struct vale_bpf_metadata) * num_present_cpus(),
-                          GFP_KERNEL);
+  vale_bpf_meta = vale_bpf_os_malloc(sizeof(struct vale_bpf_metadata) * vale_bpf_ncpus());
   if (vale_bpf_meta == NULL) {
     vale_bpf_destroy(vm);
     return -ENOMEM;
   }
 
-  bzero(vale_bpf_meta, sizeof(struct vale_bpf_metadata) * num_present_cpus());
-
-  rwlock_init(&vmlock);  // initialize rwlock for vm
+  bzero(vale_bpf_meta, sizeof(struct vale_bpf_metadata) * vale_bpf_ncpus());
 
   bzero(&nmr, sizeof(nmr));
   nmr.nr_version = NETMAP_API;
@@ -223,11 +234,39 @@ static void vale_bpf_fini(void) {
 
   vale_bpf_destroy(vm);
 
-  kfree(vale_bpf_meta);
+  vale_bpf_os_free(vale_bpf_meta);
 }
+
+#if defined(linux)
 
 module_init(vale_bpf_init);
 module_exit(vale_bpf_fini);
 MODULE_AUTHOR("Yutaro Hayakawa");
 MODULE_DESCRIPTION("VALE BPF Module");
 MODULE_LICENSE("Dual BSD/GPL");
+
+#elif defined(__FreeBSD__)
+
+static int
+vale_bpf_loader(module_t mod, int type, void *data)
+{
+  int error = 0;
+
+  switch (type) {
+  case MOD_LOAD:
+    error = vale_bpf_init();
+    break;
+  case MOD_UNLOAD:
+    vale_bpf_fini();
+    break;
+  default:
+    error = EINVAL;
+  }
+  return error;
+}
+
+DEV_MODULE(vale_bpf, vale_bpf_loader, NULL);
+
+#else
+#error Unsupported platform
+#endif

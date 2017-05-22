@@ -1,9 +1,15 @@
 #ifndef _VALE_BPF_EXTERN_FUNC_
 #define _VALE_BPF_EXTERN_FUNC_
 
+#if defined(linux)
 #include <linux/kernel.h>
 #include <linux/smp.h>
 #include <linux/types.h>
+#elif defined(__FreeBSD__)
+#include <sys/types.h>
+#else
+#error Unsupported platform
+#endif
 
 #include <vale_bpf_kern.h>
 
@@ -28,17 +34,17 @@ struct vale_bpf_metadata {
 static struct vale_bpf_metadata *vale_bpf_meta;
 
 static uint16_t get_pkt_len(void) {
-  unsigned int me = smp_processor_id();
+  int me = vale_bpf_cur_cpu();
   return *(vale_bpf_meta[me].pkt_len);
 }
 
 static void set_pkt_len(uint16_t len) {
-  unsigned int me = smp_processor_id();
+  int me = vale_bpf_cur_cpu();
   *(vale_bpf_meta[me].pkt_len) = len;
 }
 
 static uint16_t get_src_port(void) {
-  unsigned int me = smp_processor_id();
+  unsigned int me = vale_bpf_cur_cpu();
   return vale_bpf_meta[me].src_port;
 }
 

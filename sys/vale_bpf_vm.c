@@ -20,6 +20,7 @@
 #include <linux/byteorder/generic.h>
 #include <linux/slab.h>
 #include <linux/types.h>
+#include <linux/vmalloc.h>
 #include <vale_bpf_int.h>
 
 #include <bsd_glue.h>
@@ -62,12 +63,9 @@ struct vale_bpf_vm *vale_bpf_create(void) {
 }
 
 void vale_bpf_destroy(struct vale_bpf_vm *vm) {
-  /* we don't have jit support yet */
-  /*
   if (vm->jitted) {
-      munmap(vm->jitted, vm->jitted_size);
+      vfree(vm->jitted, vm->jitted_size);
   }
-  */
 
   kfree(vm->insts);
   kfree(vm->ext_funcs);

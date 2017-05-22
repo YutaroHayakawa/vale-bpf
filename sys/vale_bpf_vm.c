@@ -64,7 +64,7 @@ struct vale_bpf_vm *vale_bpf_create(void) {
 
 void vale_bpf_destroy(struct vale_bpf_vm *vm) {
   if (vm->jitted) {
-      vfree(vm->jitted, vm->jitted_size);
+      vfree(vm->jitted);
   }
 
   kfree(vm->insts);

@@ -41,7 +41,7 @@ static u_int vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *hint,
 
   /* set metadata for external function calls */
   unsigned int me = smp_processor_id();
-  vale_bpf_meta[me].pkt_len = ft->ft_len;
+  vale_bpf_meta[me].pkt_len = &(ft->ft_len);
   vale_bpf_meta[me].src_port = netmap_bdg_idx(vpna);
 
   read_lock(&vmlock);

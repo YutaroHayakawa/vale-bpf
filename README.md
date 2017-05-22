@@ -3,8 +3,6 @@ Vale-bpf module is an extention of VALE software switch.
 
 This module makes it possible to program VALE with eBPF.
 
-JIT is not supported **for now**.
-
 ## Requirements
 - clang-3.7 (for compilation of C -> eBPF program)
 - netmap (https://github.com/luigirizzo/netmap.git)
@@ -30,7 +28,7 @@ You need to load eBPF program. For that, you can use apps/prog-loader/prog-loade
 ```
 $ cd apps/prog-loader.c
 $ make
-$ ./prog-loader -s vale0: -p <your own eBPF program>
+$ ./prog-loader -s vale0: -p <your own eBPF program> -j(enable this flag if you want to use jit)
 ```
 
 Some example eBPF programs are available in apps/ebpf\_example. Please feel free to
@@ -40,14 +38,14 @@ use that.
 Our eBPF program loader reads first text section of ELF formatted eBPF program.
 Maps are not supported **for now**.
 
-eBPF targeted C code is quite limited. For detail limitation, there are great documents
+eBPF targeted C code is quite limited. For detailed limitations, there are great documents
 at Cillium's page (http://docs.cilium.io/en/latest/bpf/)
 
 But basically, it is okey you just copy and paste below template and edit it.
 
 ```C
 #include <stdint.h> // uint8_t
-#include <_vale_bpf_extern_func.h>
+#include <_vale_bpf_extern_func.h> // external functions
 
 #define DROP 255
 #define BROAD_CAST 254

@@ -28,6 +28,7 @@
 #include <dev/netmap/netmap_kern.h>
 
 #include <vale_bpf_limits.h>
+#include <vale_bpf_bsd_glue.h>
 
 #define MAX_EXT_FUNCS 64
 
@@ -42,14 +43,16 @@ struct vale_bpf_vm *vale_bpf_create(void) {
   if (vm == NULL) {
     return NULL;
   }
-  memset(vm, 0, sizeof(*vm));
+
+  bzero(vm, sizeof(*vm));
 
   vm->ext_funcs = kmalloc(MAX_EXT_FUNCS * sizeof(*vm->ext_funcs), GFP_KERNEL);
   if (vm->ext_funcs == NULL) {
     vale_bpf_destroy(vm);
     return NULL;
   }
-  memset(vm->ext_funcs, 0, MAX_EXT_FUNCS * sizeof(*vm->ext_funcs));
+
+  bzero(vm->ext_funcs, MAX_EXT_FUNCS * sizeof(*vm->ext_funcs));
 
   vm->ext_func_names =
       kmalloc(MAX_EXT_FUNCS * sizeof(*vm->ext_func_names), GFP_KERNEL);
@@ -57,7 +60,8 @@ struct vale_bpf_vm *vale_bpf_create(void) {
     vale_bpf_destroy(vm);
     return NULL;
   }
-  memset(vm->ext_func_names, 0, MAX_EXT_FUNCS * sizeof(*vm->ext_func_names));
+
+  bzero(vm->ext_func_names, MAX_EXT_FUNCS * sizeof(*vm->ext_func_names));
 
   return vm;
 }
@@ -255,20 +259,20 @@ uint64_t vale_bpf_exec(const struct vale_bpf_vm *vm, void *mem,
 
       case EBPF_OP_LE:
         if (inst.imm == 16) {
-          reg[inst.dst] = cpu_to_le16(reg[inst.dst]);
+          reg[inst.dst] = htole16(reg[inst.dst]);
         } else if (inst.imm == 32) {
-          reg[inst.dst] = cpu_to_le32(reg[inst.dst]);
+          reg[inst.dst] = htole32(reg[inst.dst]);
         } else if (inst.imm == 64) {
-          reg[inst.dst] = cpu_to_le64(reg[inst.dst]);
+          reg[inst.dst] = htole64(reg[inst.dst]);
         }
         break;
       case EBPF_OP_BE:
         if (inst.imm == 16) {
-          reg[inst.dst] = cpu_to_be16(reg[inst.dst]);
+          reg[inst.dst] = htobe16(reg[inst.dst]);
         } else if (inst.imm == 32) {
-          reg[inst.dst] = cpu_to_be32(reg[inst.dst]);
+          reg[inst.dst] = htobe32(reg[inst.dst]);
         } else if (inst.imm == 64) {
-          reg[inst.dst] = cpu_to_be64(reg[inst.dst]);
+          reg[inst.dst] = htobe64(reg[inst.dst]);
         }
         break;
 

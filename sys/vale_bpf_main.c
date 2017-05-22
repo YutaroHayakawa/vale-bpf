@@ -86,7 +86,7 @@ static int vale_bpf_load_prog(void *code, size_t code_len, int jit) {
     return -1;
   }
 
-  size_t err = copy_from_user(tmp, code, code_len);
+  size_t err = copyin(code, tmp, code_len);
   if (err != 0) {
     kfree(tmp);
     return -1;
@@ -183,8 +183,8 @@ static int vale_bpf_init(void) {
     vale_bpf_destroy(vm);
     return -ENOMEM;
   }
-  memset(vale_bpf_meta, 0,
-         sizeof(struct vale_bpf_metadata) * num_present_cpus());
+
+  bzero(vale_bpf_meta, sizeof(struct vale_bpf_metadata) * num_present_cpus());
 
   rwlock_init(&vmlock);  // initialize rwlock for vm
 

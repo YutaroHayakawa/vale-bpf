@@ -528,13 +528,13 @@ vale_bpf_compile(struct vale_bpf_vm *vm)
     state.size = 65536;
 
     state.buf = kmalloc(state.size, GFP_KERNEL);
-    memset(state.buf, 0, state.size);
+    bzero(state.buf, state.size);
 
     state.pc_locs = kmalloc((MAX_INSTS+1) * sizeof(state.pc_locs[0]), GFP_KERNEL);
-    memset(state.pc_locs, 0, (MAX_INSTS+1) * sizeof(state.pc_locs[0]));
+    bzero(state.pc_locs, (MAX_INSTS+1) * sizeof(state.pc_locs[0]));
 
     state.jumps = kmalloc(MAX_INSTS * sizeof(state.jumps[0]), GFP_KERNEL);
-    memset(state.jumps, 0, MAX_INSTS * sizeof(state.jumps[0]));
+    bzero(state.jumps, MAX_INSTS * sizeof(state.jumps[0]));
 
     state.num_jumps = 0;
 

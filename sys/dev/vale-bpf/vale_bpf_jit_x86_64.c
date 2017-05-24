@@ -562,6 +562,7 @@ out:
     vale_bpf_os_free(state.pc_locs);
     vale_bpf_os_free(state.jumps);
     if (jitted && vm->jitted == NULL) {
+        D("release jit memory");
         vale_bpf_os_free_exec_mem(jitted, jitted_size);
     }
     return vm->jitted;

@@ -15,6 +15,8 @@
  */
 
 #include <sys/types.h>
+#include <sys/param.h>
+#include <sys/systm.h>
 #include <sys/malloc.h>
 #include <sys/smp.h>
 #include <sys/proc.h>
@@ -41,7 +43,12 @@ int vale_bpf_os_cur_cpu(void) {
 }
 
 void *vale_bpf_os_alloc_exec_mem(size_t size) {
-  return (void *)kmem_malloc(kernel_arena, size, M_WAITOK);
+  void *ret = (void *)kmem_malloc(kernel_arena, size, M_NOWAIT);
+  if (ret == NULL) {
+    return NULL;
+  }
+
+  return ret;
 }
 
 void vale_bpf_os_free_exec_mem(void *mem, size_t size) {

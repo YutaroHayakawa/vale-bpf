@@ -67,6 +67,7 @@ static u_int vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *hint,
   vale_bpf_meta[me].src_port = netmap_bdg_idx(vpna);
 
   if (jit_mode) {
+    RD(1, "jitted function is in here %p", vm->jitted);
     ret = vm->jitted(ft->ft_buf, ft->ft_len);
   } else {
     ret = vale_bpf_exec(vm, ft->ft_buf, ft->ft_len);
@@ -130,7 +131,6 @@ static int vale_bpf_load_prog(void *code, size_t code_len, int jit) {
     }
   }
 
-#if defined(linux)
   if (jit) {
     vale_bpf_jit_fn fn = vale_bpf_compile(newvm);
     if (fn == NULL) {
@@ -140,7 +140,6 @@ static int vale_bpf_load_prog(void *code, size_t code_len, int jit) {
       return -1;
     }
   }
-#endif
 
   /* swap vm instance */
   tmpvm = vm;

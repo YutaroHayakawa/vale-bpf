@@ -15,6 +15,7 @@
  */
 
 #include <linux/kernel.h>
+#include <linux/slab.h>
 #include <linux/types.h>
 #include <linux/vmalloc.h>
 #include <linux/cpumask.h>
@@ -37,7 +38,7 @@ int vale_bpf_os_cur_cpu(void) {
 }
 
 void *vale_bpf_os_alloc_exec_mem(size_t size) {
-  return __vmalloc(jitted_size, GFP_KERNEL, PAGE_KERNEL_EXEC);
+  return __vmalloc(size, GFP_KERNEL, PAGE_KERNEL_EXEC);
 }
 
 void vale_bpf_os_free_exec_mem(void *mem, size_t size) {

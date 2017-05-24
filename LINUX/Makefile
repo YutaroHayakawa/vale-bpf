@@ -12,8 +12,8 @@ LINUX_SRC := /lib/modules/`uname -r`/build
 EXTRA_CFLAGS := \
 	-O3 \
 	-DVALE_NAME=\"$(VALE_NAME)\" \
-	-I$(CURDIR) \
-	-I$(CURDIR)/../include \
+	-I$(CURDIR)/../sys/dev/vale-bpf \
+	-I$(CURDIR)/../sys/net \
 	-std=gnu11 -Wno-declaration-after-statement \
 	-DCONFIG_NETMAP -DCONFIG_NETMAP_VALE \
 	-I$(LINUX_SRC)/include \
@@ -25,9 +25,14 @@ all:
 ifeq ($(VALE_NAME),)
 	@echo "Please specify VALE_NAME variable like VALE_NAME=vale0"
 else
-	make -C $(LINUX_SRC) M=$(CURDIR)/../sys/vale-bpf CONFIG_NETMAP=m \
+	make -C $(LINUX_SRC) M=$(CURDIR)/../sys/dev/vale-bpf CONFIG_NETMAP=m \
 		EXTRA_CFLAGS='$(EXTRA_CFLAGS)' KBUILD_EXTRA_SYMBOLS=$(NSRC)/LINUX/Module.symvers modules
+	cp ../sys/dev/vale-bpf/vale-bpf.ko .
 endif
+
+vale_bpf_linux.o: $(SOURCE_PATH)/vale_bpf_linux.c
+	$(call cmd,cc_o_c)
+	$(call cmd,modversions)
 
 install:
 	insmod ./vale-bpf.ko

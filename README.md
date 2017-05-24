@@ -14,11 +14,21 @@ only Linux **for now**. It will be supported in the future.
 Assume that you already installed netmap/VALE to your system
 and created VALE switch named vale0 by some way.
 
+## Linux
 ```
 $ git clone <this repo>
-$ cd vale-bpf/sys
+$ cd vale-bpf/LINUX
 $ export NSRC=<path to your netmap source>
-$ VALE_NAME="vale0" make
+$ VALE_NAME=vale0 make
+$ sudo make install
+```
+
+## FreeBSD
+```
+$ git clone <this repo>
+$ cd vale-bpf/sys/modules/vale-bpf
+$ export NSRC=<path to your netmap source>
+$ VALE_NAME=vale0 make
 $ sudo make install
 ```
 

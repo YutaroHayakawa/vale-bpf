@@ -20,6 +20,9 @@
 #include <sys/proc.h>
 #include <sys/pcpu.h>
 #include <vale_bpf_kern.h>
+#include <vm/vm.h>
+#include <vm/vm_extern.h>
+#include <vm/vm_kern.h>
 
 void *vale_bpf_os_malloc(size_t size) {
   return malloc(size, M_DEVBUF, M_NOWAIT | M_ZERO);
@@ -29,10 +32,18 @@ void vale_bpf_os_free(void *mem) {
   free(mem, M_DEVBUF);
 }
 
-u_int vale_bpf_ncpus(void) {
+u_int vale_bpf_os_ncpus(void) {
   return mp_maxid + 1;
 }
 
-int vale_bpf_cur_cpu(void) {
+int vale_bpf_os_cur_cpu(void) {
   return curthread->td_oncpu;
+}
+
+void *vale_bpf_os_alloc_exec_mem(size_t size) {
+  return (void *)kmem_malloc(kernel_arena, size, M_WAITOK);
+}
+
+void vale_bpf_os_free_exec_mem(void *mem, size_t size) {
+  kmem_free(kmem_arena, (vm_offset_t)mem, size);
 }

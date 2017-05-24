@@ -8,7 +8,6 @@ IDENT!  = uname -i
 CFLAGS += -I$(KSRC)/sys/$(TARGET)/compile/$(IDENT)
 CFLAGS += -I../../dev/vale-bpf
 CFLAGS += -I../../net
-CFLAGS += -std=gnu11
 CFLAGS += -DVALE_NAME=\"$(VALE_NAME)\"
 
 KMOD    = vale-bpf
@@ -22,6 +21,8 @@ SRCS    += vale_bpf_freebsd.c
 SRCS    += vale_bpf_loader.c
 SRCS    += vale_bpf_main.c
 SRCS    += vale_bpf_vm.c
+SRCS    += vale_bpf_jit_x86_64.h
+SRCS    += vale_bpf_jit_x86_64.c
 
 .include <bsd.kmod.mk>
 

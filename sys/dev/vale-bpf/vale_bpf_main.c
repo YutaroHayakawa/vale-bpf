@@ -62,7 +62,7 @@ static u_int vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *hint,
   uint64_t ret = NM_BDG_NOPORT;
 
   /* set metadata for external function calls */
-  unsigned int me = vale_bpf_cur_cpu();
+  unsigned int me = vale_bpf_os_cur_cpu();
   vale_bpf_meta[me].pkt_len = &(ft->ft_len);
   vale_bpf_meta[me].src_port = netmap_bdg_idx(vpna);
 
@@ -191,13 +191,13 @@ static int vale_bpf_init(void) {
   vale_bpf_register_func(vm);
 
   /* prepare metadata for each core */
-  vale_bpf_meta = vale_bpf_os_malloc(sizeof(struct vale_bpf_metadata) * vale_bpf_ncpus());
+  vale_bpf_meta = vale_bpf_os_malloc(sizeof(struct vale_bpf_metadata) * vale_bpf_os_ncpus());
   if (vale_bpf_meta == NULL) {
     vale_bpf_destroy(vm);
     return -ENOMEM;
   }
 
-  bzero(vale_bpf_meta, sizeof(struct vale_bpf_metadata) * vale_bpf_ncpus());
+  bzero(vale_bpf_meta, sizeof(struct vale_bpf_metadata) * vale_bpf_os_ncpus());
 
   bzero(&nmr, sizeof(nmr));
   nmr.nr_version = NETMAP_API;

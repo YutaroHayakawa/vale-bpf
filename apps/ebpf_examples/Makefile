@@ -1,4 +1,4 @@
-CC := clang-3.7
+CC := clang37
 CFLAGS := -I../../include -target bpf -c
 
 all: \

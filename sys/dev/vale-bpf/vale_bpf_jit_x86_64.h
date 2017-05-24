@@ -21,7 +21,13 @@
 #ifndef _VALE_BPF_JIT_X86_64_H_
 #define _VALE_BPF_JIT_X86_64_H_
 
+#if defined(linux)
 #include <bsd_glue.h>
+#elif defined(__FreeBSD__)
+#else
+#error Unsupported platform
+#endif
+
 #include <vale_bpf_limits.h>
 
 #define RAX 0

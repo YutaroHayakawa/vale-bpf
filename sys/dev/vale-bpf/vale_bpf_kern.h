@@ -79,14 +79,14 @@ int vale_bpf_load_elf(struct vale_bpf_vm *vm, const void *elf, size_t elf_len);
 
 uint64_t vale_bpf_exec(const struct vale_bpf_vm *vm, void *mem, size_t mem_len);
 
-#if defined(linux)
 vale_bpf_jit_fn vale_bpf_compile(struct vale_bpf_vm *vm);
-#endif
 
 /* OS depended functions */
 void *vale_bpf_os_malloc(size_t size);
 void vale_bpf_os_free(void *mem);
-u_int vale_bpf_ncpus(void);
-int vale_bpf_cur_cpu(void);
+u_int vale_bpf_os_ncpus(void);
+int vale_bpf_os_cur_cpu(void);
+void *vale_bpf_os_alloc_exec_mem(size_t size);
+void vale_bpf_os_free_exec_mem(void *mem, size_t size);
 
 #endif

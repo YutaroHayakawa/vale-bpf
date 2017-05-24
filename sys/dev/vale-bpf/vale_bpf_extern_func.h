@@ -34,17 +34,17 @@ struct vale_bpf_metadata {
 static struct vale_bpf_metadata *vale_bpf_meta;
 
 static uint16_t get_pkt_len(void) {
-  int me = vale_bpf_cur_cpu();
+  int me = vale_bpf_os_cur_cpu();
   return *(vale_bpf_meta[me].pkt_len);
 }
 
 static void set_pkt_len(uint16_t len) {
-  int me = vale_bpf_cur_cpu();
+  int me = vale_bpf_os_cur_cpu();
   *(vale_bpf_meta[me].pkt_len) = len;
 }
 
 static uint16_t get_src_port(void) {
-  unsigned int me = vale_bpf_cur_cpu();
+  unsigned int me = vale_bpf_os_cur_cpu();
   return vale_bpf_meta[me].src_port;
 }
 

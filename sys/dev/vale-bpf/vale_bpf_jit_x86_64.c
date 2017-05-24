@@ -17,12 +17,36 @@
  * limitations under the License.
  */
 
+#if defined(linux)
 #include <linux/kernel.h>
 #include <linux/types.h>
 #include <linux/random.h>
 #include <linux/vmalloc.h>
-
 #include <bsd_glue.h>
+#elif defined(__FreeBSD__)
+#include <sys/types.h>
+#include <sys/errno.h>
+#include <sys/param.h>	/* defines used in kernel.h */
+#include <sys/kernel.h>	/* types used in module initialization */
+#include <sys/conf.h>	/* cdevsw struct, UID, GID */
+#include <sys/sockio.h>
+#include <sys/socketvar.h>	/* struct socket */
+#include <sys/malloc.h>
+#include <sys/poll.h>
+#include <sys/rwlock.h>
+#include <sys/socket.h> /* sockaddrs */
+#include <sys/selinfo.h>
+#include <sys/sysctl.h>
+#include <net/if.h>
+#include <net/if_var.h>
+#include <net/bpf.h>		/* BIOCIMMEDIATE */
+#include <machine/bus.h>	/* bus_dmamap_* */
+#include <sys/endian.h>
+#include <sys/refcount.h>
+#else
+#error Unsupported platform
+#endif
+
 #include <net/netmap.h>
 #include <dev/netmap/netmap_kern.h>
 
@@ -56,29 +80,6 @@ map_register(int r)
 {
     KASSERT(r < REGISTER_MAP_SIZE, "");
     return register_map[r % REGISTER_MAP_SIZE];
-}
-
-/* For testing, this changes the mapping between x86 and eBPF registers */
-void
-vale_bpf_set_register_offset(int x)
-{
-    int i;
-    if (x < REGISTER_MAP_SIZE) {
-        int tmp[REGISTER_MAP_SIZE];
-        memcpy(tmp, register_map, sizeof(register_map));
-        for (i = 0; i < REGISTER_MAP_SIZE; i++) {
-            register_map[i] = tmp[(i+x)%REGISTER_MAP_SIZE];
-        }
-    } else {
-        /* Shuffle array */
-        unsigned int seed = x;
-        for (i = 0; i < REGISTER_MAP_SIZE-1; i++) {
-            int j = i + (arch_get_random_int(&seed) % (REGISTER_MAP_SIZE-i));
-            int tmp = register_map[j];
-            register_map[j] = register_map[i];
-            register_map[i] = tmp;
-        }
-    }
 }
 
 static int
@@ -527,13 +528,13 @@ vale_bpf_compile(struct vale_bpf_vm *vm)
     state.offset = 0;
     state.size = 65536;
 
-    state.buf = kmalloc(state.size, GFP_KERNEL);
+    state.buf = vale_bpf_os_malloc(state.size);
     bzero(state.buf, state.size);
 
-    state.pc_locs = kmalloc((MAX_INSTS+1) * sizeof(state.pc_locs[0]), GFP_KERNEL);
+    state.pc_locs = vale_bpf_os_malloc((MAX_INSTS+1) * sizeof(state.pc_locs[0]));
     bzero(state.pc_locs, (MAX_INSTS+1) * sizeof(state.pc_locs[0]));
 
-    state.jumps = kmalloc(MAX_INSTS * sizeof(state.jumps[0]), GFP_KERNEL);
+    state.jumps = vale_bpf_os_malloc(MAX_INSTS * sizeof(state.jumps[0]));
     bzero(state.jumps, MAX_INSTS * sizeof(state.jumps[0]));
 
     state.num_jumps = 0;
@@ -545,9 +546,9 @@ vale_bpf_compile(struct vale_bpf_vm *vm)
     resolve_jumps(vm, &state);
 
     jitted_size = state.offset;
-    jitted = __vmalloc(jitted_size, GFP_KERNEL, PAGE_KERNEL_EXEC);
+    jitted = vale_bpf_os_alloc_exec_mem(jitted_size);
     if (jitted == NULL) {
-        D("internal vale-bpf error: vmalloc_exec failed");
+        D("internal vale-bpf error: vale_bpf_os_alloc_exec_mem failed");
         goto out;
     }
 
@@ -557,11 +558,11 @@ vale_bpf_compile(struct vale_bpf_vm *vm)
     vm->jitted_size = jitted_size;
 
 out:
-    kfree(state.buf);
-    kfree(state.pc_locs);
-    kfree(state.jumps);
+    vale_bpf_os_free(state.buf);
+    vale_bpf_os_free(state.pc_locs);
+    vale_bpf_os_free(state.jumps);
     if (jitted && vm->jitted == NULL) {
-        vfree(jitted);
+        vale_bpf_os_free_exec_mem(jitted, jitted_size);
     }
     return vm->jitted;
 }

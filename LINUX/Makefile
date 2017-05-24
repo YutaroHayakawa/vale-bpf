@@ -2,6 +2,7 @@ vale-bpf-objs := \
 		vale_bpf_loader.o \
 		vale_bpf_vm.o \
 		vale_bpf_jit_x86_64.o \
+		vale_bpf_linux.o \
 		vale_bpf_main.o
 
 obj-m := vale-bpf.o
@@ -24,7 +25,7 @@ all:
 ifeq ($(VALE_NAME),)
 	@echo "Please specify VALE_NAME variable like VALE_NAME=vale0"
 else
-	make -C $(LINUX_SRC) M=$(CURDIR) CONFIG_NETMAP=m \
+	make -C $(LINUX_SRC) M=$(CURDIR)/../sys/vale-bpf CONFIG_NETMAP=m \
 		EXTRA_CFLAGS='$(EXTRA_CFLAGS)' KBUILD_EXTRA_SYMBOLS=$(NSRC)/LINUX/Module.symvers modules
 endif
 

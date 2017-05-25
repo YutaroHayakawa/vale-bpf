@@ -32,6 +32,7 @@ $ VALE_NAME=vale0 make
 $ sudo make install
 ```
 
+### Loading eBPF Program
 Now module is loaded to vale0. However, eBPF program is not yet loaded.
 You need to load eBPF program. For that, you can use apps/prog-loader/prog-loader.c
 

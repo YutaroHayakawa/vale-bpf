@@ -38,7 +38,7 @@ Now module is loaded to vale0. However, eBPF program is not yet loaded.
 You need to load eBPF program. For that, you can use apps/prog-loader/prog-loader.c
 
 ```
-$ cd apps/prog-loader.c
+$ cd apps/prog-loader
 $ make
 $ ./prog-loader -s vale0: -p <path to your own eBPF program> -j(enable this flag if you want to use jit)
 ```

@@ -1,5 +1,4 @@
-#include <stdbool.h>
-#include <stdint.h>
+#include <vale_bpf.h>
 
 struct eth {
   uint8_t dst[6];
@@ -18,7 +17,10 @@ uint8_t mylookup(uint8_t *buf) {
   uint8_t *ttl = buf + 28;
   *ttl -= 1;
 
-  /* don't reculcurate checksum for now */
+  /* don't reculcurate checksum for now
+   * checksum culcuration will be supported
+   * in external functions
+   */
 
   return 1;
 }

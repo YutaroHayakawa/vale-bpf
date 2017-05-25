@@ -56,11 +56,8 @@ at Cillium's page (http://docs.cilium.io/en/latest/bpf/)
 But basically, it is okey you just copy and paste below template and edit it.
 
 ```C
-#include <stdint.h> // uint8_t
-#include <_vale_bpf_extern_func.h> // external functions
-
-#define DROP 255
-#define BROAD_CAST 254
+#include <vale_bpf.h> // uint8_t VALE_BPF_DROP
+#include <vale_bpf_ext_common.h> // external functions
 
 /*
  * Return value of this function will be a destination port
@@ -74,11 +71,13 @@ But basically, it is okey you just copy and paste below template and edit it.
 uint8_t mylookup(uint8_t *buf) {
   /*
    * You can get packet length or source port by calling external
-   * function which is defined in sys/vale_bpf_extern_func.h
+   * function which is defined in sys/dev/vale-bpf/vale_bpf_externel_func.h
+   * For other external functions, see ebpf_include/ or 
+   * sys/dev/vale-bpf/vale_bpf_externel_func.h
    */
   uint16_t pkt_len = get_pkt_len();
   uint8_t sport = get_src_port();
-  return DROP;
+  return VALE_BPF_DROP;
 }
 ```
 

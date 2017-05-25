@@ -1,14 +1,15 @@
 # VALE BPF Extention Module
 Vale-bpf module is an extention of VALE software switch.
 
-This module makes it possible to program VALE with eBPF.
+This module makes VALE possible to program with eBPF.
+
+## Supported Platforms
+- Linux
+- FreeBSD
 
 ## Requirements
 - clang-3.7 (for compilation of C -> eBPF program)
 - netmap (https://github.com/luigirizzo/netmap.git)
-
-netmap supports both FreeBSD and Linux, but this module supports
-only Linux **for now**. It will be supported in the future.
 
 ## Installation
 Assume that you already installed netmap/VALE to your system

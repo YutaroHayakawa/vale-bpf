@@ -1,5 +1,5 @@
 CC := clang37
-CFLAGS := -I../../include -target bpf -c
+CFLAGS := -I../../ebpf_include -target bpf -c
 
 all: \
 	ip_decrement_ttl \

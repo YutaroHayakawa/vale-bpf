@@ -4,8 +4,8 @@
 #include <stdint.h>
 
 enum {
-  VALE_BPF_BROADCAST = 254;
-  VALE_BPF_DROP = 255;
+  VALE_BPF_BROADCAST = 254,
+  VALE_BPF_DROP = 255
 };
 
 #endif

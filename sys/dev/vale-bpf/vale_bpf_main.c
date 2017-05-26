@@ -151,7 +151,7 @@ static int vale_bpf_load_prog(void *code, size_t code_len, int jit) {
   vale_bpf_destroy(tmpvm);
   vale_bpf_os_free(tmp);
 
-  D("Successfully loaded ebpf program, JIT: %s", jit ? "true" : "false");
+  D("Successfully loaded ebpf program, Mode: %s", jit ? "JIT" : "Interpreter");
 
   return 0;
 }

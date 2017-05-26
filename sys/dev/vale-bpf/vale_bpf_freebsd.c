@@ -52,5 +52,5 @@ void *vale_bpf_os_alloc_exec_mem(size_t size) {
 }
 
 void vale_bpf_os_free_exec_mem(void *mem, size_t size) {
-  kmem_free(kmem_arena, (vm_offset_t)mem, size);
+  kmem_free(kernel_arena, (vm_offset_t)mem, size);
 }

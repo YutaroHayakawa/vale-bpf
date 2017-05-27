@@ -8,7 +8,7 @@ This module makes VALE possible to program with eBPF.
 - FreeBSD
 
 ## Requirements
-- clang-3.7 (for compilation of C -> eBPF program)
+- clang-3.7 or later (for compilation of C -> eBPF program)
 - netmap (https://github.com/luigirizzo/netmap.git)
 
 ## Installation
@@ -21,7 +21,7 @@ $ git clone <this repo>
 $ cd vale-bpf/LINUX
 $ export NSRC=<path to your netmap source>
 $ VALE_NAME=vale0 make
-$ sudo make install
+$ sudo VALE_NAME=vale0 make install
 ```
 
 ### FreeBSD
@@ -30,7 +30,7 @@ $ git clone <this repo>
 $ cd vale-bpf/sys/modules/vale-bpf
 $ export NSRC=<path to your netmap source>
 $ VALE_NAME=vale0 make
-$ sudo make install
+$ sudo VALE_NAME=vale0 make install
 ```
 
 ### Loading eBPF Program
@@ -67,16 +67,11 @@ But basically, it is okey you just copy and paste below template and edit it.
  * You can use any function name.
  *
  * - buf: pointer to the packet
+ * - len: packet lengt
+ * - sport: incoming switch port
  */
-uint8_t mylookup(uint8_t *buf) {
-  /*
-   * You can get packet length or source port by calling external
-   * function which is defined in sys/dev/vale-bpf/vale_bpf_externel_func.h
-   * For other external functions, see ebpf_include/ or 
-   * sys/dev/vale-bpf/vale_bpf_externel_func.h
-   */
-  uint16_t pkt_len = get_pkt_len();
-  uint8_t sport = get_src_port();
+uint8_t mylookup(uint8_t *buf, uint16_t len, uint8_t sport) {
+  // edit here
   return VALE_BPF_DROP;
 }
 ```

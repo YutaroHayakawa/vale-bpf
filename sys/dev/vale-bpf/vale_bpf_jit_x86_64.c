@@ -96,6 +96,15 @@ translate(struct vale_bpf_vm *vm, struct jit_state *state)
         emit_mov(state, RDI, map_register(1));
     }
 
+    /* Our own extentions */
+    if (map_register(2) != RSI) {
+        emit_mov(state, RSI, map_register(2));
+    }
+
+    if (map_register(3) != RDX) {
+        emit_mov(state, RDX, map_register(3));
+    }
+
     /* Copy stack pointer to R10 */
     emit_mov(state, RSP, map_register(10));
 

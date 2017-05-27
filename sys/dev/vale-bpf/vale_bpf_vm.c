@@ -155,7 +155,7 @@ int vale_bpf_load(struct vale_bpf_vm *vm, const void *code, uint32_t code_len) {
 static uint32_t ___u32(uint64_t x) { return x; }
 
 uint64_t vale_bpf_exec(const struct vale_bpf_vm *vm, void *mem,
-                       size_t mem_len) {
+                       size_t mem_len, uint8_t sport) {
   uint16_t pc = 0;
   const struct ebpf_inst *insts = vm->insts;
   uint64_t reg[16];
@@ -167,6 +167,11 @@ uint64_t vale_bpf_exec(const struct vale_bpf_vm *vm, void *mem,
   }
 
   reg[1] = (uintptr_t)mem;
+
+  /* Our own extentions */
+  reg[2] = (uint16_t)mem_len;
+  reg[3] = (uint8_t)sport;
+
   reg[10] = (uintptr_t)stack + sizeof(stack);
 
   while (1) {

@@ -28,7 +28,7 @@
 #endif
 
 struct vale_bpf_vm;
-typedef uint64_t (*vale_bpf_jit_fn)(void *mem, size_t mem_len);
+typedef uint64_t (*vale_bpf_jit_fn)(void *mem, size_t mem_len, uint8_t sport);
 
 struct vale_bpf_vm *vale_bpf_create(void);
 void vale_bpf_destroy(struct vale_bpf_vm *vm);
@@ -77,7 +77,7 @@ int vale_bpf_load(struct vale_bpf_vm *vm, const void *code, uint32_t code_len);
  */
 int vale_bpf_load_elf(struct vale_bpf_vm *vm, const void *elf, size_t elf_len);
 
-uint64_t vale_bpf_exec(const struct vale_bpf_vm *vm, void *mem, size_t mem_len);
+uint64_t vale_bpf_exec(const struct vale_bpf_vm *vm, void *mem, size_t mem_len, uint8_t sport);
 
 vale_bpf_jit_fn vale_bpf_compile(struct vale_bpf_vm *vm);
 

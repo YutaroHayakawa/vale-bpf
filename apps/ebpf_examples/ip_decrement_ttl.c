@@ -6,7 +6,7 @@ struct eth {
   uint16_t type;
 };
 
-uint8_t mylookup(uint8_t *buf) {
+uint8_t mylookup(uint8_t *buf, uint16_t len, uint8_t sport) {
   struct eth *eth = (struct eth *)buf;
   /* if ethernet type != IPv4, drop it */
   if (eth->type != 0x0008) {

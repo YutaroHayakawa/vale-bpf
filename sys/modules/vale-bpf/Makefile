@@ -10,7 +10,7 @@ CFLAGS += -I../../dev/vale-bpf
 CFLAGS += -I../../net
 CFLAGS += -DVALE_NAME=\"$(VALE_NAME)\"
 
-KMOD    = vale-bpf
+KMOD    = vale-bpf-$(VALE_NAME)
 SRCS    += ebpf.h
 SRCS    += vale_bpf_bsd_glue.h
 SRCS    += vale_bpf_extern_func.h
@@ -27,4 +27,4 @@ SRCS    += vale_bpf_jit_x86_64.c
 .include <bsd.kmod.mk>
 
 install:
-	kldload ./vale-bpf.ko
+	kldload ./vale-bpf-$(VALE_NAME).ko

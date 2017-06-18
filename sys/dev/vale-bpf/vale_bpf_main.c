@@ -72,7 +72,7 @@ static u_int vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *hint,
   }
 
   if (ret == (uint64_t)-1) {
-    ND("vale_bpf_exec failed.");
+    RD(1, "vale_bpf_exec failed.");
     return NM_BDG_NOPORT;
   }
 
@@ -175,6 +175,7 @@ static struct netmap_bdg_ops vale_bpf_ops = {vale_bpf_lookup, vale_bpf_config,
                                              NULL};
 
 static int vale_bpf_init(void) {
+  int err;
   struct nmreq nmr;
 
   /* initialize vm */
@@ -193,8 +194,14 @@ static int vale_bpf_init(void) {
     vale_bpf_destroy(vm);
     return -ENOMEM;
   }
-
   bzero(vale_bpf_meta, sizeof(struct vale_bpf_metadata) * vale_bpf_os_ncpus());
+
+  err = vale_bpf_hash64_init(&vale_bpf_hash64, 1024);
+  if (err < 0) {
+    vale_bpf_destroy(vm);
+    vale_bpf_os_free(vale_bpf_meta);
+    return -EINVAL;
+  }
 
   bzero(&nmr, sizeof(nmr));
   nmr.nr_version = NETMAP_API;
@@ -232,6 +239,7 @@ static void vale_bpf_fini(void) {
   vale_bpf_destroy(vm);
 
   vale_bpf_os_free(vale_bpf_meta);
+  vale_bpf_hash64_destroy(&vale_bpf_hash64);
 }
 
 #if defined(linux)

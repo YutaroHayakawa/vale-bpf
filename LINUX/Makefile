@@ -1,4 +1,4 @@
-vale-bpf-objs := \
+vale-bpf-$(VALE_NAME)-objs := \
 		vale_bpf_loader.o \
 		vale_bpf_vm.o \
 		vale_bpf_jit_x86_64.o \
@@ -6,7 +6,7 @@ vale-bpf-objs := \
 		vale_bpf_hash64.o \
 		vale_bpf_main.o
 
-obj-m := vale-bpf.o
+obj-m := vale-bpf-$(VALE_NAME).o
 
 LINUX_SRC := /lib/modules/`uname -r`/build
 
@@ -28,7 +28,7 @@ ifeq ($(VALE_NAME),)
 else
 	make -C $(LINUX_SRC) M=$(CURDIR)/../sys/dev/vale-bpf CONFIG_NETMAP=m \
 		EXTRA_CFLAGS='$(EXTRA_CFLAGS)' KBUILD_EXTRA_SYMBOLS=$(NSRC)/LINUX/Module.symvers modules
-	cp ../sys/dev/vale-bpf/vale-bpf.ko .
+	cp ../sys/dev/vale-bpf/vale-bpf-$(VALE_NAME).ko .
 endif
 
 vale_bpf_linux.o: $(SOURCE_PATH)/vale_bpf_linux.c
@@ -36,7 +36,7 @@ vale_bpf_linux.o: $(SOURCE_PATH)/vale_bpf_linux.c
 	$(call cmd,modversions)
 
 install:
-	insmod ./vale-bpf.ko
+	insmod ./vale-bpf-$(VALE_NAME).ko
 
 clean:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean

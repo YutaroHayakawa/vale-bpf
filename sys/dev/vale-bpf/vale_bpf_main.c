@@ -213,7 +213,7 @@ static int vale_bpf_init(void) {
     return -ENOENT;
   }
 
-  D("Loaded vale-bpf");
+  D("Loaded vale-bpf-" VALE_NAME);
 
   return 0;
 }
@@ -234,7 +234,7 @@ static void vale_bpf_fini(void) {
     D("failed to release VALE bridge %d", error);
   }
 
-  D("Unloaded vale-bpf");
+  D("Unloaded vale-bpf-" VALE_NAME);
 
   vale_bpf_destroy(vm);
 
@@ -260,9 +260,11 @@ vale_bpf_loader(module_t mod, int type, void *data)
   switch (type) {
   case MOD_LOAD:
     error = vale_bpf_init();
+    D("Loaded vale-bpf-" VALE_NAME);
     break;
   case MOD_UNLOAD:
     vale_bpf_fini();
+    D("Unloaded vale-bpf-" VALE_NAME);
     break;
   default:
     error = EINVAL;

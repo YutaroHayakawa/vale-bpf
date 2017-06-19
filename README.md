@@ -48,7 +48,9 @@ use that.
 
 ## eBPF Program Semantics
 Our eBPF program loader reads first text section of ELF formatted eBPF program.
-Maps are not supported **for now**.
+Maps, tail calls and any other eBPF features are not supported for now. They are
+possibly supported in future versions.
+
 
 eBPF targeted C code is quite limited. For detailed limitations, there are great documents
 at Cillium's page (http://docs.cilium.io/en/latest/bpf/)
@@ -72,7 +74,7 @@ But basically, it is okey you just copy and paste below template and edit it.
  */
 uint8_t mylookup(uint8_t *buf, uint16_t len, uint8_t sport) {
   // edit here
-  return VALE_BPF_DROP;
+  return <destination port number>;
 }
 ```
 

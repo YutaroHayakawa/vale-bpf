@@ -54,20 +54,11 @@ static uint64_t vale_bpf_hash64_search_entry(uint64_t key) {
   return _vale_bpf_hash64_search_entry(&vale_bpf_hash64, key);
 }
 
-static void vale_bpf_RD64(int rate, uint64_t n) {
-#if defined(linux)
-  RD(rate, "%llu", n);
-#elif defined(__FreeBSD__)
-  RD(rate, "%lu", n);
-#endif
-}
-
 static void vale_bpf_register_func(struct vale_bpf_vm *vm) {
   vale_bpf_register(vm, 0, "set_pkt_len", set_pkt_len);
   vale_bpf_register(vm, 1, "vale_bpf_hash64_add_entry", vale_bpf_hash64_add_entry);
   vale_bpf_register(vm, 2, "vale_bpf_hash64_remove_entry", vale_bpf_hash64_remove_entry);
   vale_bpf_register(vm, 3, "vale_bpf_hash64_search_entry", vale_bpf_hash64_search_entry);
-  vale_bpf_register(vm, 4, "vale_bpf_RD64", vale_bpf_RD64);
 }
 
 #endif

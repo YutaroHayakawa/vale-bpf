@@ -8,7 +8,7 @@ struct tbl_ent {
   uint8_t port;
 };
 
-uint8_t rewrite_mac(uint8_t *buf, uint16_t len, uint8_t sport) {
+uint8_t learning_bridge(uint8_t *buf, uint16_t len, uint8_t sport) {
   int err;
   uint64_t key = 0;
   uint64_t ent = 0;
@@ -17,7 +17,7 @@ uint8_t rewrite_mac(uint8_t *buf, uint16_t len, uint8_t sport) {
   memcpy(&key, buf + 6, 6); // use src mac as key
 
   ent = vale_bpf_hash64_search_entry(key);
-  if ((uint64_t)ent == 18446744073709551615) {
+  if ((uint64_t)ent == UINT64_MAX) {
     memcpy(entp->addr, buf + 6, 6);
     entp->port = sport;
     vale_bpf_hash64_add_entry(key, ent);
@@ -27,7 +27,7 @@ uint8_t rewrite_mac(uint8_t *buf, uint16_t len, uint8_t sport) {
   memcpy(&key, buf, 6); // use dst mac as key
 
   ent = vale_bpf_hash64_search_entry(key);
-  if (ent == 18446744073709551615) {
+  if (ent == UINT64_MAX) {
     return VALE_BPF_BROADCAST;
   } else {
     return entp->port;

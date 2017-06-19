@@ -5,7 +5,7 @@ all: \
 	ip_decrement_ttl \
 	rewrite_mac \
 	external_function_call \
-	hash64_test
+	learning_bridge
 
 ip_decrement_ttl:
 	$(CC) $(CFLAGS) ip_decrement_ttl.c
@@ -16,8 +16,8 @@ rewrite_mac:
 external_function_call:
 	$(CC) $(CFLAGS) external_function_call.c
 
-hash64_test:
-	$(CC) $(CFLAGS) hash64_test.c
+learning_bridge:
+	$(CC) $(CFLAGS) learning_bridge.c
 
 clean:
 	rm *.o *.s

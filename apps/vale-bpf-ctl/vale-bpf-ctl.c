@@ -176,7 +176,7 @@ void main_usage(char *msg) {
   fprintf(stderr, "Usage: vale-bpf-ctl [ method ] [ options ]\n");
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char *argv[]) {
   int (*body)(int, char*, uint8_t, int, char**);
 
   if (argc < 2) {
@@ -193,8 +193,13 @@ int main(int argc, char **argv) {
     main_usage("Invalid method name\n");
   }
 
-  opterr = 0;
+  char *cargv[argc-2];
+  for (int i = 2; i < argc; i++) {
+    cargv[i-2] = argv[i];
+  }
+
   optind = 2;
+  opterr = 0;
 
   int opt;
   int id = -1;
@@ -233,7 +238,7 @@ int main(int argc, char **argv) {
 
   optind = 2;
 
-  body(nmfd, sw_name, id, argc, argv);
+  body(nmfd, sw_name, id, argc-2, &cargv);
 
   close(nmfd);
   free(sw_name);

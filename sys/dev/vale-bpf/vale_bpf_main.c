@@ -170,14 +170,15 @@ static int vale_bpf_load_prog(uint8_t id, void *code, size_t code_len, int jit) 
   return 0;
 }
 
-static void vale_bpf_register_vm(uint8_t id) {
+static int vale_bpf_register_vm(uint8_t id) {
   if (vm_ent[id] != NULL) {
     D("ID %u is already used", id);
-    return;
+    return -1;
   }
 
   vm_ent[id] = vale_bpf_create();
   D("Registered VM! ID: %u", id);
+  return 0;
 }
 
 static void _vale_bpf_unregister_vm(uint8_t id) {
@@ -186,12 +187,15 @@ static void _vale_bpf_unregister_vm(uint8_t id) {
   D("Unregistered VM! ID: %u", id);
 }
 
-static void vale_bpf_unregister_vm(uint8_t id) {
+static int vale_bpf_unregister_vm(uint8_t id) {
   if (vm_ent[id] == NULL) {
     D("ID %u is not used", id);
-    return;
+    return -1;
   }
+
   _vale_bpf_unregister_vm(id);
+
+  return 0;
 }
 
 static int vale_bpf_config(struct nm_ifreq *req) {
@@ -199,14 +203,12 @@ static int vale_bpf_config(struct nm_ifreq *req) {
 
   switch (r->method) {
     case REGISTER_VM:
-      vale_bpf_register_vm(r->reg_data.id);
-      break;
+      return vale_bpf_register_vm(r->reg_data.id);
     case LOAD_PROG:
       return vale_bpf_load_prog(r->prog_data.id, r->prog_data.code,
           r->prog_data.code_len, r->prog_data.jit);
     case UNREGISTER_VM:
-      vale_bpf_unregister_vm(r->reg_data.id);
-      break;
+      return vale_bpf_unregister_vm(r->reg_data.id);
     default:
       return -1;
   }

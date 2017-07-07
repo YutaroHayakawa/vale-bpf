@@ -4,3 +4,6 @@
 **/*.mod.c
 **/modules.order
 **/Module.symvers
+
+apps/prog-loader/prog-loader
+apps/vale-bpf-register/vale-bpf-register

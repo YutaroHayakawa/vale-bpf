@@ -272,7 +272,7 @@ module_init(vale_bpf_init);
 module_exit(vale_bpf_fini);
 MODULE_AUTHOR("Yutaro Hayakawa");
 MODULE_DESCRIPTION("VALE BPF Module");
-MODULE_LICENSE("Dual BSD/GPL");
+MODULE_LICENSE("Apache2");
 
 #elif defined(__FreeBSD__)
 

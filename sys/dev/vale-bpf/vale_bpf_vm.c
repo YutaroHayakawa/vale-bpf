@@ -91,8 +91,7 @@ struct vale_bpf_vm *vale_bpf_create(void) {
 }
 
 void vale_bpf_destroy(struct vale_bpf_vm *vm) {
-  /* JIT is not supported in FreeBSD for now */
-  if (vm->jitted) {
+  if (vm->jitted != NULL) {
       vale_bpf_os_free_exec_mem(vm->jitted, vm->jitted_size);
   }
 

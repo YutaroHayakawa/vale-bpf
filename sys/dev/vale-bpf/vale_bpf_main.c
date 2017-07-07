@@ -50,42 +50,55 @@
 #include <dev/netmap/netmap_kern.h> /* XXX Provide path in Makefile */
 
 #include <vale_bpf.h>
-#include <vale_bpf_extern_func.h>
 #include <vale_bpf_int.h>
 #include <vale_bpf_kern.h>
 
-static struct vale_bpf_vm *vm;
-static int jit_mode;
+#define MAX_VM_ENT 256
+static struct vale_bpf_vm *vm_ent[MAX_VM_ENT];
+
+static int16_t classify(struct nm_bdg_fwd *ft, uint8_t *hint,
+                 struct netmap_vp_adapter *vpna) {
+  return 0;
+}
 
 static u_int vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *hint,
                              struct netmap_vp_adapter *vpna) {
   uint64_t ret = NM_BDG_NOPORT;
 
-  /* set metadata for external function calls */
-  unsigned int me = vale_bpf_os_cur_cpu();
-  vale_bpf_meta[me].pkt_len = &(ft->ft_len);
+  int16_t id = classify(ft, hint, vpna);
+  if (id < 0) {
+    RD(1, "Classify failed");
+    return NM_BDG_NOPORT;
+  }
 
-  if (jit_mode) {
+  struct vale_bpf_vm *vm = vm_ent[id];
+  if (vm == NULL) {
+    RD(1, "No instance that has %d", id);
+    return NM_BDG_NOPORT;
+  }
+
+  if (vm->jitted) {
     ret = vm->jitted(ft->ft_buf, ft->ft_len, netmap_bdg_idx(vpna));
   } else {
     ret = vale_bpf_exec(vm, ft->ft_buf, ft->ft_len, netmap_bdg_idx(vpna));
   }
 
   if (ret == (uint64_t)-1) {
-    ND("vale_bpf_exec failed.");
+    RD(1, "vale_bpf_exec failed");
     return NM_BDG_NOPORT;
   }
 
   if (ret > NM_BDG_NOPORT) {
+    RD(1, "Invalid port number %llu", ret);
     return NM_BDG_NOPORT;
   }
 
-  ND("dst: %lu", ret);
+  RD(1, "dst: %llu", ret);
 
   return (u_int)ret;
 }
 
-static int vale_bpf_load_prog(void *code, size_t code_len, int jit) {
+static int vale_bpf_load_prog(uint8_t id, void *code, size_t code_len, int jit) {
   int ret;
   bool elf = code_len >= SELFMAG && !memcmp(code, ELFMAG, SELFMAG);
   struct vale_bpf_vm *tmpvm = NULL;
@@ -93,6 +106,12 @@ static int vale_bpf_load_prog(void *code, size_t code_len, int jit) {
 
   if (code == NULL) {
     D("code is NULL");
+    return -1;
+  }
+
+  struct vale_bpf_vm **vm = &vm_ent[id];
+  if (*vm == NULL) {
+    D("VM that has ID %u doesn't exist", id);
     return -1;
   }
 
@@ -112,8 +131,6 @@ static int vale_bpf_load_prog(void *code, size_t code_len, int jit) {
     vale_bpf_os_free(tmp);
     return -1;
   }
-
-  vale_bpf_register_func(newvm);
 
   if (elf) {
     ret = vale_bpf_load_elf(newvm, tmp, code_len);
@@ -137,14 +154,12 @@ static int vale_bpf_load_prog(void *code, size_t code_len, int jit) {
       vale_bpf_os_free(tmp);
       return -1;
     }
+    D("JIT Done");
   }
 
   /* swap vm instance */
-  tmpvm = vm;
-  vm = newvm;
-
-  /* set jit flag */
-  jit_mode = jit;
+  tmpvm = *vm;
+  *vm = newvm;
 
   /* Cleanup old vm and temporary code */
   vale_bpf_destroy(tmpvm);
@@ -155,20 +170,48 @@ static int vale_bpf_load_prog(void *code, size_t code_len, int jit) {
   return 0;
 }
 
+static void vale_bpf_register_vm(uint8_t id) {
+  if (vm_ent[id] != NULL) {
+    D("ID %u is already used", id);
+    return;
+  }
+
+  vm_ent[id] = vale_bpf_create();
+  D("Registered VM! ID: %u", id);
+}
+
+static void _vale_bpf_unregister_vm(uint8_t id) {
+  vale_bpf_destroy(vm_ent[id]);
+  vm_ent[id] = NULL;
+  D("Unregistered VM! ID: %u", id);
+}
+
+static void vale_bpf_unregister_vm(uint8_t id) {
+  if (vm_ent[id] == NULL) {
+    D("ID %u is not used", id);
+    return;
+  }
+  _vale_bpf_unregister_vm(id);
+}
+
 static int vale_bpf_config(struct nm_ifreq *req) {
-  int ret;
   struct vale_bpf_req *r = (struct vale_bpf_req *)req->data;
 
   switch (r->method) {
+    case REGISTER_VM:
+      vale_bpf_register_vm(r->reg_data.id);
+      break;
     case LOAD_PROG:
-      ret = vale_bpf_load_prog(r->prog_data.code,
+      return vale_bpf_load_prog(r->prog_data.id, r->prog_data.code,
           r->prog_data.code_len, r->prog_data.jit);
+    case UNREGISTER_VM:
+      vale_bpf_unregister_vm(r->reg_data.id);
       break;
     default:
-      ret = -1;
-      break;
+      return -1;
   }
-  return ret;
+
+  return 0;
 }
 
 static struct netmap_bdg_ops vale_bpf_ops = {vale_bpf_lookup, vale_bpf_config,
@@ -178,23 +221,9 @@ static int vale_bpf_init(void) {
   struct nmreq nmr;
 
   /* initialize vm */
-  vm = vale_bpf_create();
-  if (vm == NULL) {
-    return -ENOMEM;
+  for (int i = 0; i < MAX_VM_ENT; i++) {
+    vm_ent[i] = NULL;
   }
-
-  // TODO Load default eBPF program
-
-  vale_bpf_register_func(vm);
-
-  /* prepare metadata for each core */
-  vale_bpf_meta = vale_bpf_os_malloc(sizeof(struct vale_bpf_metadata) * vale_bpf_os_ncpus());
-  if (vale_bpf_meta == NULL) {
-    vale_bpf_destroy(vm);
-    return -ENOMEM;
-  }
-
-  bzero(vale_bpf_meta, sizeof(struct vale_bpf_metadata) * vale_bpf_os_ncpus());
 
   bzero(&nmr, sizeof(nmr));
   nmr.nr_version = NETMAP_API;
@@ -216,6 +245,13 @@ static void vale_bpf_fini(void) {
   int error;
   struct netmap_bdg_ops tmp = {netmap_bdg_learning, NULL, NULL};
 
+  for (int i = 0; i < MAX_VM_ENT; i++) {
+    if (vm_ent[i] == NULL) {
+      continue;
+    }
+    _vale_bpf_unregister_vm(i);
+  }
+
   bzero(&nmr, sizeof(nmr));
   nmr.nr_version = NETMAP_API;
   strlcpy(nmr.nr_name, VALE_NAME, sizeof(nmr.nr_name));
@@ -228,10 +264,6 @@ static void vale_bpf_fini(void) {
   }
 
   D("Unloaded vale-bpf-" VALE_NAME);
-
-  vale_bpf_destroy(vm);
-
-  vale_bpf_os_free(vale_bpf_meta);
 }
 
 #if defined(linux)
@@ -269,3 +301,4 @@ DEV_MODULE(vale_bpf, vale_bpf_loader, NULL);
 #else
 #error Unsupported platform
 #endif
+

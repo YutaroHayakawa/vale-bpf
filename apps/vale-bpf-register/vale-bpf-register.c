@@ -89,22 +89,32 @@ void usage(void) {
 
 int main(int argc, char **argv) {
   int err;
-  int id = -1;
   int nmfd;
-  int jit = 0;
-  char *sw_name, *prog_name;
+  int id = -1;
+  char *sw_name;
+  enum vale_bpf_method method = __MAX_METHOD;
 
   int opt;
-  while ((opt = getopt(argc, argv, "js:p:i:")) != -1) {
+  while ((opt = getopt(argc, argv, "rus:i:")) != -1) {
     switch (opt) {
+      case 'r':
+        if (method != __MAX_METHOD) {
+          D("Method already specified");
+          usage();
+          return -1;
+        }
+        method = REGISTER_VM;
+        break;
+      case 'u':
+        if (method != __MAX_METHOD) {
+          D("Method already specified");
+          usage();
+          return -1;
+        }
+        method = UNREGISTER_VM;
+        break;
       case 's':
         sw_name = strdup(optarg);
-        break;
-      case 'p':
-        prog_name = strdup(optarg);
-        break;
-      case 'j':
-        jit = 1;
         break;
       case 'i':
         id = atoi(optarg);
@@ -134,33 +144,16 @@ int main(int argc, char **argv) {
   memset(&req, 0, sizeof(req));
   strcpy(req.nifr_name, sw_name);
 
-  size_t length;
-  void *prog;
-  prog = readfile(prog_name, VALE_BPF_MAX_PROG_LEN, &length);
-  if (prog == NULL) {
-    die("readfile");
-  }
-
-  size_t inst_count = length / 64;
-
-  D("prog: %p length: %lu insts: %lu", prog, length, inst_count);
-
   struct vale_bpf_req *r = (struct vale_bpf_req *)req.data;
-  r->method = LOAD_PROG;
-  r->len = sizeof(struct vale_bpf_req);
-  r->prog_data.id = (uint8_t)id;
-  r->prog_data.jit = jit;
-  r->prog_data.code = prog;
-  r->prog_data.code_len = length;
+  r->method = method;
+  r->reg_data.id = (uint8_t)id;
 
   err = ioctl(nmfd, NIOCCONFIG, &req);
   if (err < 0) {
     die("ioctl NIOCCONFIG");
   }
 
-  free(prog);
   free(sw_name);
-  free(prog_name);
   close(nmfd);
 
   return 0;

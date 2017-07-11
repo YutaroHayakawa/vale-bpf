@@ -180,6 +180,7 @@ int main(int argc, char *argv[]) {
   int (*body)(int, char*, uint8_t, int, char**);
 
   if (argc < 2) {
+    main_usage("Too few arguments\n");
     return EXIT_FAILURE;
   }
 
@@ -191,6 +192,7 @@ int main(int argc, char *argv[]) {
     body = unregister_vm;
   } else {
     main_usage("Invalid method name\n");
+    return EXIT_FAILURE;
   }
 
   char *cargv[argc-2];
@@ -216,17 +218,17 @@ int main(int argc, char *argv[]) {
   }
 
   if (id < 0) {
-    main_usage("Please specify id");
+    main_usage("Please specify id\n");
     return -1;
   }
 
   if (id > 255) {
-    main_usage("Invalid id");
+    main_usage("Invalid id\n");
     return -1;
   }
 
   if (sw_name == NULL) {
-    main_usage("Please specify switch name");
+    main_usage("Please specify switch name\n");
     return -1;
   }
 

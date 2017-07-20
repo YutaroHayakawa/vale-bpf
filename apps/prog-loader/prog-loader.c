@@ -84,7 +84,8 @@ static void *readfile(const char *path, size_t maxlen, size_t *len) {
 
 void usage(void) {
   fprintf(stderr,
-          "Usage: [-s]witch name (terminated by :) [-p]rogram name(ebpf elf) [-j]it");
+          "Usage: [-s]witch name (terminated by :) [-p]rogram name(ebpf elf) "
+          "[-j]it");
 }
 
 int main(int argc, char **argv) {

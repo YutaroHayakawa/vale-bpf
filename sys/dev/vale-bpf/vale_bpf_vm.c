@@ -18,32 +18,32 @@
 
 #if defined(linux)
 #include <linux/kernel.h>
+#include <bsd_glue.h>
 #include <linux/byteorder/generic.h>
 #include <linux/slab.h>
 #include <linux/types.h>
 #include <linux/vmalloc.h>
-#include <bsd_glue.h>
 #include <vale_bpf_bsd_glue.h>
 #elif defined(__FreeBSD__)
-#include <sys/types.h>
-#include <sys/errno.h>
-#include <sys/param.h>	/* defines used in kernel.h */
-#include <sys/kernel.h>	/* types used in module initialization */
-#include <sys/conf.h>	/* cdevsw struct, UID, GID */
-#include <sys/sockio.h>
-#include <sys/socketvar.h>	/* struct socket */
-#include <sys/malloc.h>
-#include <sys/poll.h>
-#include <sys/rwlock.h>
-#include <sys/socket.h> /* sockaddrs */
-#include <sys/selinfo.h>
-#include <sys/sysctl.h>
+#include <machine/bus.h> /* bus_dmamap_* */
+#include <net/bpf.h>     /* BIOCIMMEDIATE */
 #include <net/if.h>
 #include <net/if_var.h>
-#include <net/bpf.h>		/* BIOCIMMEDIATE */
-#include <machine/bus.h>	/* bus_dmamap_* */
+#include <sys/conf.h> /* cdevsw struct, UID, GID */
 #include <sys/endian.h>
+#include <sys/errno.h>
+#include <sys/kernel.h> /* types used in module initialization */
+#include <sys/malloc.h>
+#include <sys/param.h> /* defines used in kernel.h */
+#include <sys/poll.h>
 #include <sys/refcount.h>
+#include <sys/rwlock.h>
+#include <sys/selinfo.h>
+#include <sys/socket.h>    /* sockaddrs */
+#include <sys/socketvar.h> /* struct socket */
+#include <sys/sockio.h>
+#include <sys/sysctl.h>
+#include <sys/types.h>
 #else
 #error Unsupported platform
 #endif
@@ -51,8 +51,8 @@
 #include <net/netmap.h>
 #include <dev/netmap/netmap_kern.h>
 
-#include <vale_bpf_limits.h>
 #include <vale_bpf_int.h>
+#include <vale_bpf_limits.h>
 
 #define MAX_EXT_FUNCS 64
 
@@ -93,7 +93,7 @@ struct vale_bpf_vm *vale_bpf_create(void) {
 void vale_bpf_destroy(struct vale_bpf_vm *vm) {
   /* JIT is not supported in FreeBSD for now */
   if (vm->jitted) {
-      vale_bpf_os_free_exec_mem(vm->jitted, vm->jitted_size);
+    vale_bpf_os_free_exec_mem(vm->jitted, vm->jitted_size);
   }
 
   vale_bpf_os_free(vm->insts);
@@ -154,8 +154,8 @@ int vale_bpf_load(struct vale_bpf_vm *vm, const void *code, uint32_t code_len) {
 
 static uint32_t ___u32(uint64_t x) { return x; }
 
-uint64_t vale_bpf_exec(const struct vale_bpf_vm *vm, void *mem,
-                       size_t mem_len, uint8_t sport) {
+uint64_t vale_bpf_exec(const struct vale_bpf_vm *vm, void *mem, size_t mem_len,
+                       uint8_t sport) {
   uint16_t pc = 0;
   const struct ebpf_inst *insts = vm->insts;
   uint64_t reg[16];
@@ -397,7 +397,7 @@ uint64_t vale_bpf_exec(const struct vale_bpf_vm *vm, void *mem,
  */
 #define BOUNDS_CHECK_LOAD(size)                                          \
   do {                                                                   \
-    /* cast for non GNU source */                                         \
+    /* cast for non GNU source */                                        \
     if (!bounds_check((char *)reg[inst.src] + inst.offset, size, "load", \
                       cur_pc, mem, mem_len, stack)) {                    \
       return UINT64_MAX;                                                 \
@@ -727,11 +727,13 @@ static bool bounds_check(void *addr, int size, const char *type,
                          uint16_t cur_pc, void *mem, size_t mem_len,
                          void *stack) {
   /* cast for non GNU source */
-  if (mem && (addr >= mem && ((char *)addr + size) <= ((char *)mem + mem_len))) {
+  if (mem &&
+      (addr >= mem && ((char *)addr + size) <= ((char *)mem + mem_len))) {
     /* Context access */
     return true;
-  /* cast for non GNU source */
-  } else if (addr >= stack && ((char *)addr + size) <= ((char *)stack + STACK_SIZE)) {
+    /* cast for non GNU source */
+  } else if (addr >= stack &&
+             ((char *)addr + size) <= ((char *)stack + STACK_SIZE)) {
     /* Stack access */
     return true;
   } else {

@@ -15,32 +15,22 @@
  */
 
 #include <linux/kernel.h>
+#include <linux/cpumask.h>
 #include <linux/slab.h>
+#include <linux/smp.h>
 #include <linux/types.h>
 #include <linux/vmalloc.h>
-#include <linux/cpumask.h>
-#include <linux/smp.h>
 
-void *vale_bpf_os_malloc(size_t size) {
-  return kmalloc(size, GFP_KERNEL);
-}
+void *vale_bpf_os_malloc(size_t size) { return kmalloc(size, GFP_KERNEL); }
 
-void vale_bpf_os_free(void *mem) {
-  kfree(mem);
-}
+void vale_bpf_os_free(void *mem) { kfree(mem); }
 
-u_int vale_bpf_os_ncpus(void) {
-  return num_present_cpus();
-}
+u_int vale_bpf_os_ncpus(void) { return num_present_cpus(); }
 
-int vale_bpf_os_cur_cpu(void) {
-  return smp_processor_id();
-}
+int vale_bpf_os_cur_cpu(void) { return smp_processor_id(); }
 
 void *vale_bpf_os_alloc_exec_mem(size_t size) {
   return __vmalloc(size, GFP_KERNEL, PAGE_KERNEL_EXEC);
 }
 
-void vale_bpf_os_free_exec_mem(void *mem, size_t size) {
-  vfree(mem);
-}
+void vale_bpf_os_free_exec_mem(void *mem, size_t size) { vfree(mem); }

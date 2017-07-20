@@ -19,33 +19,33 @@
 #if defined(linux)
 
 #include <linux/kernel.h>
+#include <bsd_glue.h>
 #include <linux/slab.h>
 #include <linux/types.h>
 #include <uapi/linux/elf.h>
-#include <bsd_glue.h>
 
 #elif defined(__FreeBSD__)
 
-#include <sys/types.h>
-#include <sys/errno.h>
-#include <sys/param.h>	/* defines used in kernel.h */
-#include <sys/kernel.h>	/* types used in module initialization */
-#include <sys/conf.h>	/* cdevsw struct, UID, GID */
-#include <sys/sockio.h>
-#include <sys/socketvar.h>	/* struct socket */
-#include <sys/malloc.h>
-#include <sys/poll.h>
-#include <sys/rwlock.h>
-#include <sys/socket.h> /* sockaddrs */
-#include <sys/selinfo.h>
-#include <sys/sysctl.h>
+#include <machine/bus.h> /* bus_dmamap_* */
+#include <net/bpf.h>     /* BIOCIMMEDIATE */
 #include <net/if.h>
 #include <net/if_var.h>
-#include <net/bpf.h>		/* BIOCIMMEDIATE */
-#include <machine/bus.h>	/* bus_dmamap_* */
-#include <sys/endian.h>
-#include <sys/refcount.h>
+#include <sys/conf.h> /* cdevsw struct, UID, GID */
 #include <sys/elf.h>
+#include <sys/endian.h>
+#include <sys/errno.h>
+#include <sys/kernel.h> /* types used in module initialization */
+#include <sys/malloc.h>
+#include <sys/param.h> /* defines used in kernel.h */
+#include <sys/poll.h>
+#include <sys/refcount.h>
+#include <sys/rwlock.h>
+#include <sys/selinfo.h>
+#include <sys/socket.h>    /* sockaddrs */
+#include <sys/socketvar.h> /* struct socket */
+#include <sys/sockio.h>
+#include <sys/sysctl.h>
+#include <sys/types.h>
 
 #else
 
@@ -217,7 +217,8 @@ int vale_bpf_load_elf(struct vale_bpf_vm *vm, const void *elf,
       const Elf64_Rel *r = &rs[j];
 
       if (ELF64_R_TYPE(r->r_info) != 2) {
-        D("bad relocation type %llu", (unsigned long long)ELF64_R_TYPE(r->r_info));
+        D("bad relocation type %llu",
+          (unsigned long long)ELF64_R_TYPE(r->r_info));
         goto error;
       }
 

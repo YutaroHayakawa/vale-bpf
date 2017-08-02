@@ -725,16 +725,14 @@ static bool validate(const struct vale_bpf_vm *vm,
 static bool bounds_check(void *addr, int size, const char *type,
                          uint16_t cur_pc, void *mem, size_t mem_len,
                          void *stack) {
-  /* cast for non GNU source */
   if (mem && (addr >= mem && ((char *)addr + size) <= ((char *)mem + mem_len))) {
     /* Context access */
     return true;
-  /* cast for non GNU source */
   } else if (addr >= stack && ((char *)addr + size) <= ((char *)stack + STACK_SIZE)) {
     /* Stack access */
     return true;
   } else {
-    D("valeBPF error: out of bounds memory %s at PC %u, addr %p, size %d\n",
+    D("vale-bpf runtime error: out of bounds memory %s at PC %u, addr %p, size %d\n",
       type, cur_pc, addr, size);
     D("mem %p/%zd stack %p/%d\n", mem, mem_len, stack, STACK_SIZE);
     return false;

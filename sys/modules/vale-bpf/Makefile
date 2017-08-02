@@ -12,7 +12,6 @@ CFLAGS += -DVALE_NAME=\"$(VALE_NAME)\"
 
 KMOD    = vale-bpf-$(VALE_NAME)
 SRCS    += ebpf.h
-SRCS    += vale_bpf_bsd_glue.h
 SRCS    += vale_bpf_extern_func.h
 SRCS    += vale_bpf_int.h
 SRCS    += vale_bpf_kern.h

@@ -15,16 +15,17 @@
  */
 
 #include <sys/types.h>
-#include <sys/param.h>
 #include <sys/systm.h>
 #include <sys/malloc.h>
 #include <sys/smp.h>
 #include <sys/proc.h>
 #include <sys/pcpu.h>
-#include <vale_bpf_kern.h>
+
 #include <vm/vm.h>
 #include <vm/vm_extern.h>
 #include <vm/vm_kern.h>
+
+#include "vale_bpf_kern.h"
 
 void *vale_bpf_os_malloc(size_t size) {
   return malloc(size, M_DEVBUF, M_NOWAIT | M_ZERO);

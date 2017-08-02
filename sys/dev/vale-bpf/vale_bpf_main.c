@@ -49,10 +49,10 @@
 #include <net/netmap.h>
 #include <dev/netmap/netmap_kern.h> /* XXX Provide path in Makefile */
 
-#include <vale_bpf.h>
-#include <vale_bpf_extern_func.h>
-#include <vale_bpf_int.h>
-#include <vale_bpf_kern.h>
+#include "vale_bpf.h"
+#include "vale_bpf_extern_func.h"
+#include "vale_bpf_int.h"
+#include "vale_bpf_kern.h"
 
 static struct vale_bpf_vm *vm;
 static int jit_mode;

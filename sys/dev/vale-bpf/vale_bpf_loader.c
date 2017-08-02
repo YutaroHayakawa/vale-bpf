@@ -54,7 +54,7 @@
 #include <net/netmap.h>
 #include <dev/netmap/netmap_kern.h>
 
-#include <vale_bpf_int.h>
+#include "vale_bpf_int.h"
 
 #define MAX_SECTIONS 32
 

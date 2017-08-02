@@ -17,8 +17,8 @@
 #ifndef _VALE_BPF_INT_H_
 #define _VALE_BPF_INT_H_
 
-#include <ebpf.h>
-#include <vale_bpf_kern.h>
+#include "ebpf.h"
+#include "vale_bpf_kern.h"
 
 #define MAX_INSTS 65536
 #define STACK_SIZE 128

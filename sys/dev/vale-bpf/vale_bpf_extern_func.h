@@ -11,7 +11,7 @@
 #error Unsupported platform
 #endif
 
-#include <vale_bpf_kern.h>
+#include "vale_bpf_kern.h"
 
 /*
  * This file defines several external functions for

@@ -21,25 +21,25 @@
 #include <linux/types.h>
 #include <linux/vmalloc.h>
 #include <bsd_glue.h>
-#include <vale_bpf_bsd_glue.h>
+#include "vale_bpf_bsd_glue.h"
 #elif defined(__FreeBSD__)
 #include <sys/types.h>
 #include <sys/errno.h>
-#include <sys/param.h>	/* defines used in kernel.h */
-#include <sys/kernel.h>	/* types used in module initialization */
-#include <sys/conf.h>	/* cdevsw struct, UID, GID */
+#include <sys/param.h>
+#include <sys/kernel.h>
+#include <sys/conf.h>
 #include <sys/sockio.h>
-#include <sys/socketvar.h>	/* struct socket */
+#include <sys/socketvar.h>
 #include <sys/malloc.h>
 #include <sys/poll.h>
 #include <sys/rwlock.h>
-#include <sys/socket.h> /* sockaddrs */
+#include <sys/socket.h>
 #include <sys/selinfo.h>
 #include <sys/sysctl.h>
 #include <net/if.h>
 #include <net/if_var.h>
-#include <net/bpf.h>		/* BIOCIMMEDIATE */
-#include <machine/bus.h>	/* bus_dmamap_* */
+#include <net/bpf.h>
+#include <machine/bus.h>
 #include <sys/endian.h>
 #include <sys/refcount.h>
 #else
@@ -49,8 +49,8 @@
 #include <net/netmap.h>
 #include <dev/netmap/netmap_kern.h>
 
-#include <vale_bpf_limits.h>
-#include <vale_bpf_int.h>
+#include "vale_bpf_limits.h"
+#include "vale_bpf_int.h"
 
 #define MAX_EXT_FUNCS 64
 

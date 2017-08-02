@@ -47,8 +47,8 @@
 #include <net/netmap.h>
 #include <dev/netmap/netmap_kern.h>
 
-#include <vale_bpf_int.h>
-#include <vale_bpf_jit_x86_64.h>
+#include "vale_bpf_int.h"
+#include "vale_bpf_jit_x86_64.h"
 
 /* Special values for target_pc in struct jump */
 #define TARGET_PC_EXIT -1

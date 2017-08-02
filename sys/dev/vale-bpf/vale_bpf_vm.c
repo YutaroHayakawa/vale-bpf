@@ -209,7 +209,7 @@ uint64_t vale_bpf_exec(const struct vale_bpf_vm *vm, void *mem,
         break;
       case EBPF_OP_DIV_REG:
         if (reg[inst.src] == 0) {
-          D("uBPF error: division by zero at PC %u\n", cur_pc);
+          D("vale-bpf runtime error: division by zero at PC %u\n", cur_pc);
           return UINT64_MAX;
         }
         reg[inst.dst] = ___u32(reg[inst.dst]) / ___u32(reg[inst.src]);
@@ -257,7 +257,7 @@ uint64_t vale_bpf_exec(const struct vale_bpf_vm *vm, void *mem,
         break;
       case EBPF_OP_MOD_REG:
         if (reg[inst.src] == 0) {
-          D("valeBPF error: division by zero at PC %u\n", cur_pc);
+          D("vale-bpf runtime error: division by zero at PC %u\n", cur_pc);
           return UINT64_MAX;
         }
         reg[inst.dst] = ___u32(reg[inst.dst]) % ___u32(reg[inst.src]);
@@ -329,7 +329,7 @@ uint64_t vale_bpf_exec(const struct vale_bpf_vm *vm, void *mem,
         break;
       case EBPF_OP_DIV64_REG:
         if (reg[inst.src] == 0) {
-          D("valeBPF error: division by zero at PC %u\n", cur_pc);
+          D("vale-bpf runtime error: division by zero at PC %u\n", cur_pc);
           return UINT64_MAX;
         }
         reg[inst.dst] /= reg[inst.src];
@@ -366,7 +366,7 @@ uint64_t vale_bpf_exec(const struct vale_bpf_vm *vm, void *mem,
         break;
       case EBPF_OP_MOD64_REG:
         if (reg[inst.src] == 0) {
-          D("valeBPF error: division by zero at PC %u\n", cur_pc);
+          D("vale-bpf runtime error: division by zero at PC %u\n", cur_pc);
           return UINT64_MAX;
         }
         reg[inst.dst] %= reg[inst.src];

@@ -24,6 +24,3 @@ SRCS    += vale_bpf_jit_x86_64.h
 SRCS    += vale_bpf_jit_x86_64.c
 
 .include <bsd.kmod.mk>
-
-install:
-	kldload ./vale-bpf-$(VALE_NAME).ko

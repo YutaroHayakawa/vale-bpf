@@ -36,9 +36,6 @@ vale_bpf_linux.o: ./vale_bpf_linux.c
 	$(call cmd,cc_o_c)
 	$(call cmd,modversions)
 
-install:
-	insmod ./vale-bpf-$(VALE_NAME).ko
-
 clean:
 	make -C $(LINUX_SRC) M=$(CURDIR) clean
 	rm -rf $(SRC_DIR)/modules.order $(SRC_DIR)/Module.symvers \

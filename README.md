@@ -15,22 +15,24 @@ This module makes VALE possible to program with eBPF.
 Assume that you already installed netmap/VALE to your system
 and created VALE switch named vale0 by some way.
 
+Also before running make, you need to set some environment variables.
+- VALE\_NAME to vale0 (in this example)
+- NSRC to your netmap source
+
 ### Linux
 ```
 $ git clone <this repo>
 $ cd vale-bpf/LINUX
-$ export NSRC=<path to your netmap source>
-$ VALE_NAME=vale0 make
-$ sudo VALE_NAME=vale0 make install
+$ make
+$ sudo insmod vale-bpf-vale0.ko
 ```
 
 ### FreeBSD
 ```
 $ git clone <this repo>
 $ cd vale-bpf/sys/modules/vale-bpf
-$ export NSRC=<path to your netmap source>
-$ VALE_NAME=vale0 make
-$ sudo VALE_NAME=vale0 make install
+$ make
+$ sudo kldload vale-bpf-vale0.ko
 ```
 
 ### Loading eBPF Program

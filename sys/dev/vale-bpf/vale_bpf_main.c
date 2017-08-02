@@ -17,28 +17,28 @@
 #if defined(linux)
 
 #include <linux/kernel.h>
-#include <bsd_glue.h>
 #include <linux/cpumask.h>
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/string.h>
 #include <linux/types.h>
+#include <bsd_glue.h>
 
 #elif defined(__FreeBSD__)
 
-#include <machine/bus.h>
+#include <sys/param.h>
+#include <sys/module.h>
+#include <sys/types.h>
+#include <sys/cdefs.h>
+#include <sys/kernel.h>
+#include <sys/conf.h>
+#include <sys/malloc.h>
+#include <sys/socket.h>
+#include <sys/selinfo.h>
+#include <sys/elf.h>
 #include <net/if.h>
 #include <net/if_var.h>
-#include <sys/cdefs.h>
-#include <sys/conf.h>
-#include <sys/elf.h>
-#include <sys/kernel.h>
-#include <sys/malloc.h>
-#include <sys/module.h>
-#include <sys/param.h>
-#include <sys/selinfo.h>
-#include <sys/socket.h>
-#include <sys/types.h>
+#include <machine/bus.h>
 
 #else
 
@@ -161,8 +161,8 @@ static int vale_bpf_config(struct nm_ifreq *req) {
 
   switch (r->method) {
     case LOAD_PROG:
-      ret = vale_bpf_load_prog(r->prog_data.code, r->prog_data.code_len,
-                               r->prog_data.jit);
+      ret = vale_bpf_load_prog(r->prog_data.code,
+          r->prog_data.code_len, r->prog_data.jit);
       break;
     default:
       ret = -1;
@@ -188,8 +188,7 @@ static int vale_bpf_init(void) {
   vale_bpf_register_func(vm);
 
   /* prepare metadata for each core */
-  vale_bpf_meta = vale_bpf_os_malloc(sizeof(struct vale_bpf_metadata) *
-                                     vale_bpf_os_ncpus());
+  vale_bpf_meta = vale_bpf_os_malloc(sizeof(struct vale_bpf_metadata) * vale_bpf_os_ncpus());
   if (vale_bpf_meta == NULL) {
     vale_bpf_destroy(vm);
     return -ENOMEM;
@@ -245,20 +244,22 @@ MODULE_LICENSE("Apache2");
 
 #elif defined(__FreeBSD__)
 
-static int vale_bpf_loader(module_t mod, int type, void *data) {
+static int
+vale_bpf_loader(module_t mod, int type, void *data)
+{
   int error = 0;
 
   switch (type) {
-    case MOD_LOAD:
-      error = vale_bpf_init();
-      D("Loaded vale-bpf-" VALE_NAME);
-      break;
-    case MOD_UNLOAD:
-      vale_bpf_fini();
-      D("Unloaded vale-bpf-" VALE_NAME);
-      break;
-    default:
-      error = EINVAL;
+  case MOD_LOAD:
+    error = vale_bpf_init();
+    D("Loaded vale-bpf-" VALE_NAME);
+    break;
+  case MOD_UNLOAD:
+    vale_bpf_fini();
+    D("Unloaded vale-bpf-" VALE_NAME);
+    break;
+  default:
+    error = EINVAL;
   }
   return error;
 }

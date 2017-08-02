@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#include <sys/malloc.h>
-#include <sys/param.h>
-#include <sys/pcpu.h>
-#include <sys/proc.h>
-#include <sys/smp.h>
-#include <sys/systm.h>
 #include <sys/types.h>
+#include <sys/param.h>
+#include <sys/systm.h>
+#include <sys/malloc.h>
+#include <sys/smp.h>
+#include <sys/proc.h>
+#include <sys/pcpu.h>
 #include <vale_bpf_kern.h>
 #include <vm/vm.h>
 #include <vm/vm_extern.h>
@@ -30,11 +30,17 @@ void *vale_bpf_os_malloc(size_t size) {
   return malloc(size, M_DEVBUF, M_NOWAIT | M_ZERO);
 }
 
-void vale_bpf_os_free(void *mem) { free(mem, M_DEVBUF); }
+void vale_bpf_os_free(void *mem) {
+  free(mem, M_DEVBUF);
+}
 
-u_int vale_bpf_os_ncpus(void) { return mp_maxid + 1; }
+u_int vale_bpf_os_ncpus(void) {
+  return mp_maxid + 1;
+}
 
-int vale_bpf_os_cur_cpu(void) { return curthread->td_oncpu; }
+int vale_bpf_os_cur_cpu(void) {
+  return curthread->td_oncpu;
+}
 
 void *vale_bpf_os_alloc_exec_mem(size_t size) {
   void *ret = (void *)kmem_malloc(kernel_arena, size, M_NOWAIT);

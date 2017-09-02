@@ -49,30 +49,37 @@
 #include <net/netmap.h>
 #include <dev/netmap/netmap_kern.h> /* XXX Provide path in Makefile */
 
-#include "vale_bpf.h"
-#include "vale_bpf_extern_func.h"
-#include "vale_bpf_int.h"
-#include "vale_bpf_kern.h"
+#include <sys/ebpf.h>
+#include <sys/ebpf_types.h>
 
-static struct vale_bpf_vm *vm;
+#include <net/vale_bpf.h>
+
+struct vale_bpf_ctx {
+  struct nm_bdg_fwd *ft;
+  uint8_t *hint;
+  struct netmap_vp_adapter *vpna;
+};
+
+static struct ebpf_vm *vm;
 static int jit_mode;
 
 static u_int vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *hint,
                              struct netmap_vp_adapter *vpna) {
   uint64_t ret = NM_BDG_NOPORT;
+  struct vale_bpf_ctx ctx;
 
-  /* set metadata for external function calls */
-  unsigned int me = vale_bpf_os_cur_cpu();
-  vale_bpf_meta[me].pkt_len = &(ft->ft_len);
+  ctx.ft = ft;
+  ctx.hint = hint;
+  ctx.vpna = vpna;
 
   if (jit_mode) {
-    ret = vm->jitted(ft->ft_buf, ft->ft_len, netmap_bdg_idx(vpna));
+    ret = ebpf_exec_jit(vm, &ctx, sizeof(ctx));
   } else {
-    ret = vale_bpf_exec(vm, ft->ft_buf, ft->ft_len, netmap_bdg_idx(vpna));
+    ret = ebpf_exec(vm, &ctx, sizeof(ctx));
   }
 
   if (ret == (uint64_t)-1) {
-    ND("vale_bpf_exec failed.");
+    ND("lookup failed");
     return NM_BDG_NOPORT;
   }
 
@@ -88,53 +95,51 @@ static u_int vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *hint,
 static int vale_bpf_load_prog(void *code, size_t code_len, int jit) {
   int ret;
   bool elf = code_len >= SELFMAG && !memcmp(code, ELFMAG, SELFMAG);
-  struct vale_bpf_vm *tmpvm = NULL;
-  struct vale_bpf_vm *newvm = NULL;
+  struct ebpf_vm *tmpvm = NULL;
+  struct ebpf_vm *newvm = NULL;
 
   if (code == NULL) {
     D("code is NULL");
     return -1;
   }
 
-  void *tmp = vale_bpf_os_malloc(code_len);
+  void *tmp = ebpf_malloc(code_len);
   if (tmp == NULL) {
     return -1;
   }
 
   size_t err = copyin(code, tmp, code_len);
   if (err != 0) {
-    vale_bpf_os_free(tmp);
+    ebpf_free(tmp);
     return -1;
   }
 
-  newvm = vale_bpf_create();
+  newvm = ebpf_create();
   if (newvm == NULL) {
-    vale_bpf_os_free(tmp);
+    ebpf_free(tmp);
     return -1;
   }
-
-  vale_bpf_register_func(newvm);
 
   if (elf) {
-    ret = vale_bpf_load_elf(newvm, tmp, code_len);
+    ret = ebpf_load_elf(newvm, tmp, code_len);
     if (ret < 0) {
-      vale_bpf_os_free(tmp);
+      ebpf_free(tmp);
       return -1;
     }
   } else {
-    ret = vale_bpf_load(newvm, tmp, code_len);
+    ret = ebpf_load(newvm, tmp, code_len);
     if (ret < 0) {
-      vale_bpf_os_free(tmp);
+      ebpf_free(tmp);
       return -1;
     }
   }
 
   if (jit) {
-    vale_bpf_jit_fn fn = vale_bpf_compile(newvm);
+    ebpf_jit_fn fn = ebpf_compile(newvm);
     if (fn == NULL) {
       D("Failed to compile");
-      vale_bpf_destroy(newvm);
-      vale_bpf_os_free(tmp);
+      ebpf_destroy(newvm);
+      ebpf_free(tmp);
       return -1;
     }
   }
@@ -147,8 +152,8 @@ static int vale_bpf_load_prog(void *code, size_t code_len, int jit) {
   jit_mode = jit;
 
   /* Cleanup old vm and temporary code */
-  vale_bpf_destroy(tmpvm);
-  vale_bpf_os_free(tmp);
+  ebpf_destroy(tmpvm);
+  ebpf_free(tmp);
 
   D("Successfully loaded ebpf program, Mode: %s", jit ? "JIT" : "Interpreter");
 
@@ -178,23 +183,10 @@ static int vale_bpf_init(void) {
   struct nmreq nmr;
 
   /* initialize vm */
-  vm = vale_bpf_create();
+  vm = ebpf_create();
   if (vm == NULL) {
     return -ENOMEM;
   }
-
-  // TODO Load default eBPF program
-
-  vale_bpf_register_func(vm);
-
-  /* prepare metadata for each core */
-  vale_bpf_meta = vale_bpf_os_malloc(sizeof(struct vale_bpf_metadata) * vale_bpf_os_ncpus());
-  if (vale_bpf_meta == NULL) {
-    vale_bpf_destroy(vm);
-    return -ENOMEM;
-  }
-
-  bzero(vale_bpf_meta, sizeof(struct vale_bpf_metadata) * vale_bpf_os_ncpus());
 
   bzero(&nmr, sizeof(nmr));
   nmr.nr_version = NETMAP_API;
@@ -229,9 +221,7 @@ static void vale_bpf_fini(void) {
 
   D("Unloaded vale-bpf-" VALE_NAME);
 
-  vale_bpf_destroy(vm);
-
-  vale_bpf_os_free(vale_bpf_meta);
+  ebpf_destroy(vm);
 }
 
 #if defined(linux)
@@ -265,6 +255,7 @@ vale_bpf_loader(module_t mod, int type, void *data)
 }
 
 DEV_MODULE(vale_bpf, vale_bpf_loader, NULL);
+MODULE_DEPEND(vale_bpf, ebpf, 1, 1, 1);
 
 #else
 #error Unsupported platform

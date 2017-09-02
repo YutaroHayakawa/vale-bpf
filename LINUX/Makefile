@@ -1,11 +1,6 @@
 SRC_DIR:=../sys/dev/vale-bpf
 
-vale-bpf-$(VALE_NAME)-objs := \
-	$(SRC_DIR)/vale_bpf_loader.o \
-	$(SRC_DIR)/vale_bpf_vm.o \
-	$(SRC_DIR)/vale_bpf_jit_x86_64.o \
-	vale_bpf_linux.o \
-	$(SRC_DIR)/vale_bpf_main.o
+vale-bpf-$(VALE_NAME)-objs := $(SRC_DIR)/vale_bpf.o
 
 obj-m:=vale-bpf-$(VALE_NAME).o
 
@@ -31,10 +26,6 @@ else
 	make -C $(LINUX_SRC) M=$(CURDIR) CONFIG_NETMAP=m \
 		EXTRA_CFLAGS='$(EXTRA_CFLAGS)' KBUILD_EXTRA_SYMBOLS=$(NSRC)/LINUX/Module.symvers modules
 endif
-
-vale_bpf_linux.o: ./vale_bpf_linux.c
-	$(call cmd,cc_o_c)
-	$(call cmd,modversions)
 
 clean:
 	make -C $(LINUX_SRC) M=$(CURDIR) clean

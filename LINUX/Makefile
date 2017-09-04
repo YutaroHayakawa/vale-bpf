@@ -9,22 +9,28 @@ LINUX_SRC:=/lib/modules/$(shell uname -r)/build
 EXTRA_CFLAGS:= \
 	-O3 \
 	-DVALE_NAME=\"$(VALE_NAME)\" \
-	-I$(CURDIR)/../sys/dev/vale-bpf \
-	-I$(CURDIR)/../sys/net \
+	-DCONFIG_NETMAP \
+	-DCONFIG_NETMAP_VALE \
 	-std=gnu11 -Wno-declaration-after-statement \
-	-DCONFIG_NETMAP -DCONFIG_NETMAP_VALE \
+	-I$(CURDIR)/../sys/dev/vale-bpf \
+	-I$(CURDIR)/../sys \
 	-I$(LINUX_SRC)/include \
 	-I$(NSRC) \
 	-I$(NSRC)/LINUX \
 	-I$(NSRC)/sys \
+	-I$(EBPFSRC)/sys \
 	-I$(PWD)
+
+EXTRA_SYMBOLS:= \
+	$(EBPFSRC)/LINUX/Module.symvers \
+	$(NSRC)/LINUX/Module.symvers
 
 all:
 ifeq ($(VALE_NAME),)
 	@echo "Please specify VALE_NAME variable like VALE_NAME=vale0"
 else
 	make -C $(LINUX_SRC) M=$(CURDIR) CONFIG_NETMAP=m \
-		EXTRA_CFLAGS='$(EXTRA_CFLAGS)' KBUILD_EXTRA_SYMBOLS=$(NSRC)/LINUX/Module.symvers modules
+		EXTRA_CFLAGS='$(EXTRA_CFLAGS)' KBUILD_EXTRA_SYMBOLS='$(EXTRA_SYMBOLS)' modules
 endif
 
 clean:

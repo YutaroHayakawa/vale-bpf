@@ -1,5 +1,5 @@
 # VALE BPF Extention Module
-Vale-bpf module is an extention of VALE software switch.
+VALE-BPF module is an extention of VALE software switch.
 
 This module makes VALE possible to program with eBPF.
 
@@ -8,31 +8,74 @@ This module makes VALE possible to program with eBPF.
 - FreeBSD
 
 ## Requirements
-- clang-3.7 or later (for compilation of C -> eBPF program)
+- generic-ebpf (https://github.com/YutaroHayakawa/generic-ebpf.git)
+- clang-3.7 or later (for compilation of C → eBPF program)
 - netmap (https://github.com/luigirizzo/netmap.git)
 
 ## Installation
-Assume that you already installed netmap/VALE to your system
-and created VALE switch named vale0 by some way.
 
-Also before running make, you need to set some environment variables.
-- VALE\_NAME to vale0 (in this example)
-- NSRC to your netmap source
+### Install netmap
 
-### Linux
 ```
-$ git clone <this repo>
+$ git clone https://github.com/luigirizzo/netmap.git
+$ cd netmap
+$ ./configure
+$ make
+# make install
+```
+
+Create switch named vale0 and attach two interfaces
+
+```
+# vale-ctl -n vi0 //interface 0
+# vale-ctl -n vi1 //interface 1
+# vale-ctl -a vale0:vi0 //attach interface 0 to vale0
+# vale-ctl -a vale0:vi1 //attach interface 1 to vale0
+```
+
+### Install generic-ebpf
+
+#### FreeBSD
+
+```
+$ git clone https://github.com/YutaroHayakawa/generic-ebpf.git
+$ cd generic-ebpf/sys/modules/ebpf
+$ make
+# kldload ./ebpf.ko
+```
+
+#### Linux
+
+```
+$ git clone https://github.com/YutaroHayakawa/generic-ebpf.git
+$ cd generic-ebpf/LINUX
+$ make
+# insmod ebpf.ko
+```
+
+### Install vale-bpf
+
+#### FreeBSD
+
+```
+$ export NSRC=<path to your netmap source>
+$ export EBPFSRC=<path to your generic-ebpf source>
+$ export VALE_NAME=vale0
+$ git clone https://github.com/YutaroHayakawa/vale-bpf.git
+$ cd vale-bpf/sys/modules
+$ make
+$ kldload ./vale-bpf-vale0.ko
+```
+
+#### Linux
+```
+$ export NSRC=<path to your netmap source>
+$ export EBPFSRC=<path to your generic-ebpf source>
+$ export VALE_NAME=vale0
+$ git clone https://github.com/YutaroHayakawa/vale-bpf.git
 $ cd vale-bpf/LINUX
 $ make
-$ sudo insmod vale-bpf-vale0.ko
-```
-
-### FreeBSD
-```
-$ git clone <this repo>
-$ cd vale-bpf/sys/modules/vale-bpf
-$ make
-$ sudo kldload vale-bpf-vale0.ko
+$ kldload ./vale-bpf-vale0.ko
 ```
 
 ### Loading eBPF Program
@@ -47,36 +90,6 @@ $ ./prog-loader -s vale0: -p <path to your own eBPF program> -j(enable this flag
 
 Some example eBPF programs are available in apps/ebpf\_example. Please feel free to
 use that.
-
-## eBPF Program Semantics
-Our eBPF program loader reads first text section of ELF formatted eBPF program.
-Maps are not supported **for now**.
-
-eBPF targeted C code is quite limited. For detailed limitations, there are great documents
-at Cillium's page (http://docs.cilium.io/en/latest/bpf/)
-
-But basically, it is okey you just copy and paste below template and edit it.
-
-```C
-#include <vale_bpf.h> // uint8_t VALE_BPF_DROP
-#include <vale_bpf_ext_common.h> // external functions
-
-/*
- * Return value of this function will be a destination port
- * of the packet. Port 255 and 254 are reserved for drop and
- * broadcast (to all ports except incoming port).
- *
- * You can use any function name.
- *
- * - buf: pointer to the packet
- * - len: packet lengt
- * - sport: incoming switch port
- */
-uint8_t mylookup(uint8_t *buf, uint16_t len, uint8_t sport) {
-  // edit here
-  return VALE_BPF_DROP;
-}
-```
 
 ## Random Notes
 Our eBPF VM codes are almost all based on uBPF(https://github.com/iovisor/ubpf).

@@ -55,9 +55,10 @@
 #include <net/vale_bpf.h>
 
 struct vale_bpf_ctx {
-  struct nm_bdg_fwd *ft;
-  uint8_t *hint;
-  struct netmap_vp_adapter *vpna;
+    uint8_t *buf;
+    uint16_t len;
+    uint8_t *hint;
+    uint8_t sport;
 };
 
 static struct ebpf_vm *vm;
@@ -68,9 +69,10 @@ static u_int vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *hint,
   uint64_t ret = NM_BDG_NOPORT;
   struct vale_bpf_ctx ctx;
 
-  ctx.ft = ft;
+  ctx.buf = ft->ft_buf;
+  ctx.len = ft->ft_len;
   ctx.hint = hint;
-  ctx.vpna = vpna;
+  ctx.sport = netmap_bdg_idx(vpna);
 
   if (jit_mode) {
     ret = ebpf_exec_jit(vm, &ctx, sizeof(ctx));

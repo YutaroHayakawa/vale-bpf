@@ -39,7 +39,7 @@ Create switch named vale0 and attach two interfaces
 
 ```
 $ git clone https://github.com/YutaroHayakawa/generic-ebpf.git
-$ cd generic-ebpf/sys/modules/ebpf
+$ cd generic-ebpf/FreeBSD/kernel
 $ make
 # kldload ./ebpf.ko
 ```
@@ -48,7 +48,7 @@ $ make
 
 ```
 $ git clone https://github.com/YutaroHayakawa/generic-ebpf.git
-$ cd generic-ebpf/LINUX
+$ cd generic-ebpf/LINUX/kernel
 $ make
 # insmod ebpf.ko
 ```
@@ -75,7 +75,7 @@ $ export VALE_NAME=vale0
 $ git clone https://github.com/YutaroHayakawa/vale-bpf.git
 $ cd vale-bpf/LINUX
 $ make
-$ kldload ./vale-bpf-vale0.ko
+$ insmod ./vale-bpf-vale0.ko
 ```
 
 ### Loading eBPF Program

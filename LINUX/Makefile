@@ -22,7 +22,7 @@ EXTRA_CFLAGS:= \
 	-I$(PWD)
 
 EXTRA_SYMBOLS:= \
-	$(EBPFSRC)/LINUX/Module.symvers \
+	$(EBPFSRC)/LINUX/kernel/Module.symvers \
 	$(NSRC)/Module.symvers
 
 

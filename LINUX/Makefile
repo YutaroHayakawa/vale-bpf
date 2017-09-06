@@ -23,7 +23,8 @@ EXTRA_CFLAGS:= \
 
 EXTRA_SYMBOLS:= \
 	$(EBPFSRC)/LINUX/Module.symvers \
-	$(NSRC)/LINUX/Module.symvers
+	$(NSRC)/Module.symvers
+
 
 all:
 ifeq ($(VALE_NAME),)

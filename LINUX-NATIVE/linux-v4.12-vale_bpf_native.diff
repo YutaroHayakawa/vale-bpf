@@ -1,0 +1,335 @@
+diff --git a/include/linux/bpf_types.h b/include/linux/bpf_types.h
+index 03bf223..c80e2e3 100644
+--- a/include/linux/bpf_types.h
++++ b/include/linux/bpf_types.h
+@@ -10,6 +10,7 @@ BPF_PROG_TYPE(BPF_PROG_TYPE_CGROUP_SOCK, cg_sock_prog_ops)
+ BPF_PROG_TYPE(BPF_PROG_TYPE_LWT_IN, lwt_inout_prog_ops)
+ BPF_PROG_TYPE(BPF_PROG_TYPE_LWT_OUT, lwt_inout_prog_ops)
+ BPF_PROG_TYPE(BPF_PROG_TYPE_LWT_XMIT, lwt_xmit_prog_ops)
++BPF_PROG_TYPE(BPF_PROG_TYPE_VALE_BPF, vale_bpf_prog_ops)
+ #endif
+ #ifdef CONFIG_BPF_EVENTS
+ BPF_PROG_TYPE(BPF_PROG_TYPE_KPROBE, kprobe_prog_ops)
+diff --git a/include/linux/filter.h b/include/linux/filter.h
+index 62d948f..725aec6 100644
+--- a/include/linux/filter.h
++++ b/include/linux/filter.h
+@@ -535,6 +535,12 @@ static __always_inline u32 bpf_prog_run_xdp(const struct bpf_prog *prog,
+ 	return BPF_PROG_RUN(prog, xdp);
+ }
+ 
++static __always_inline u32 bpf_prog_run_vale_bpf(const struct bpf_prog *prog,
++					    struct vale_bpf_md *md)
++{
++	return BPF_PROG_RUN(prog, md);
++}
++
+ static inline u32 bpf_prog_insn_size(const struct bpf_prog *prog)
+ {
+ 	return prog->len * sizeof(struct bpf_insn);
+diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
+index 94dfa9d..40c35a9 100644
+--- a/include/uapi/linux/bpf.h
++++ b/include/uapi/linux/bpf.h
+@@ -115,6 +115,7 @@ enum bpf_prog_type {
+ 	BPF_PROG_TYPE_LWT_IN,
+ 	BPF_PROG_TYPE_LWT_OUT,
+ 	BPF_PROG_TYPE_LWT_XMIT,
++	BPF_PROG_TYPE_VALE_BPF,
+ };
+ 
+ enum bpf_attach_type {
+@@ -670,4 +671,19 @@ struct xdp_md {
+ 	__u32 data_end;
+ };
+ 
++/* User return codes for VALE_BPF prog type.
++ * A valid VALE_BPF program must return one of these defined values or attached
++ * port id. Unknown port id will result in packet drop.
++ */
++enum vale_bpf_action {
++	VALE_BPF_BROADCAST = 254,
++	VALE_BPF_DROP = 255,
++};
++
++/* user accessible metadata for VALE_BPF packet hook */
++struct vale_bpf_md {
++	__u8 *pkt;
++	__u16 pkt_len;
++};
++
+ #endif /* _UAPI__LINUX_BPF_H__ */
+diff --git a/net/core/filter.c b/net/core/filter.c
+index a6bb95f..b3732ae 100644
+--- a/net/core/filter.c
++++ b/net/core/filter.c
+@@ -2834,6 +2834,13 @@ lwt_xmit_func_proto(enum bpf_func_id func_id)
+ 	}
+ }
+ 
++static const struct bpf_func_proto *
++vale_bpf_func_proto(enum bpf_func_id func_id)
++{
++  printk("vale_bpf_func_proto\n");
++	return bpf_base_func_proto(func_id);
++}
++
+ static bool __is_valid_access(int off, int size)
+ {
+ 	if (off < 0 || off >= sizeof(struct __sk_buff))
+@@ -3039,6 +3046,14 @@ static bool xdp_is_valid_access(int off, int size,
+ 	return __is_valid_xdp_access(off, size);
+ }
+ 
++static bool vale_bpf_is_valid_access(int off, int size,
++				enum bpf_access_type type,
++				enum bpf_reg_type *reg_type)
++{
++  printk("vale_bpf_is_valid_access\n");
++	return true;
++}
++
+ void bpf_warn_invalid_xdp_action(u32 act)
+ {
+ 	WARN_ONCE(1, "Illegal XDP return value %u, expect packet loss\n", act);
+@@ -3314,6 +3329,15 @@ static u32 xdp_convert_ctx_access(enum bpf_access_type type,
+ 	return insn - insn_buf;
+ }
+ 
++static u32 vale_bpf_convert_ctx_access(enum bpf_access_type type,
++				  const struct bpf_insn *si,
++				  struct bpf_insn *insn_buf,
++				  struct bpf_prog *prog)
++{
++  printk("vale_bpf_convert_ctx_access\n");
++	return 0;
++}
++
+ const struct bpf_verifier_ops sk_filter_prog_ops = {
+ 	.get_func_proto		= sk_filter_func_proto,
+ 	.is_valid_access	= sk_filter_is_valid_access,
+@@ -3363,6 +3387,12 @@ const struct bpf_verifier_ops cg_sock_prog_ops = {
+ 	.convert_ctx_access	= sock_filter_convert_ctx_access,
+ };
+ 
++const struct bpf_verifier_ops vale_bpf_prog_ops = {
++	.get_func_proto		= vale_bpf_func_proto,
++	.is_valid_access	= vale_bpf_is_valid_access,
++	.convert_ctx_access	= vale_bpf_convert_ctx_access,
++};
++
+ int sk_detach_filter(struct sock *sk)
+ {
+ 	int ret = -ENOENT;
+diff --git a/samples/bpf/Makefile b/samples/bpf/Makefile
+index 6c7468e..edec79db 100644
+--- a/samples/bpf/Makefile
++++ b/samples/bpf/Makefile
+@@ -36,6 +36,7 @@ hostprogs-y += lwt_len_hist
+ hostprogs-y += xdp_tx_iptunnel
+ hostprogs-y += test_map_in_map
+ hostprogs-y += per_socket_stats_example
++hostprogs-y += vale_bpf_loader
+ 
+ # Libbpf dependencies
+ LIBBPF := ../../tools/lib/bpf/bpf.o
+@@ -76,6 +77,7 @@ lwt_len_hist-objs := bpf_load.o $(LIBBPF) lwt_len_hist_user.o
+ xdp_tx_iptunnel-objs := bpf_load.o $(LIBBPF) xdp_tx_iptunnel_user.o
+ test_map_in_map-objs := bpf_load.o $(LIBBPF) test_map_in_map_user.o
+ per_socket_stats_example-objs := $(LIBBPF) cookie_uid_helper_example.o
++vale_bpf_loader-objs := bpf_load.o $(LIBBPF) vale_bpf_loader.o
+ 
+ # Tell kbuild to always build the programs
+ always := $(hostprogs-y)
+@@ -111,6 +113,7 @@ always += lwt_len_hist_kern.o
+ always += xdp_tx_iptunnel_kern.o
+ always += test_map_in_map_kern.o
+ always += cookie_uid_helper_example.o
++always += vale_bpf_kern.o
+ 
+ HOSTCFLAGS += -I$(objtree)/usr/include
+ HOSTCFLAGS += -I$(srctree)/tools/lib/
+@@ -146,6 +149,8 @@ HOSTLOADLIBES_tc_l2_redirect += -l elf
+ HOSTLOADLIBES_lwt_len_hist += -l elf
+ HOSTLOADLIBES_xdp_tx_iptunnel += -lelf
+ HOSTLOADLIBES_test_map_in_map += -lelf
++HOSTCFLAGS_vale_bpf_loader.o += -I$(NSRC)/sys -I$(VALE_BPF_SRC)/sys
++HOSTLOADLIBES_vale_bpf_loader += -lelf
+ 
+ # Allows pointing LLC/CLANG to a LLVM backend with bpf support, redefine on cmdline:
+ #  make samples/bpf/ LLC=~/git/llvm/build/bin/llc CLANG=~/git/llvm/build/bin/clang
+diff --git a/samples/bpf/bpf_load.c b/samples/bpf/bpf_load.c
+index 74456b3..9fc3879 100644
+--- a/samples/bpf/bpf_load.c
++++ b/samples/bpf/bpf_load.c
+@@ -64,6 +64,7 @@ static int load_and_attach(const char *event, struct bpf_insn *prog, int size)
+ 	bool is_perf_event = strncmp(event, "perf_event", 10) == 0;
+ 	bool is_cgroup_skb = strncmp(event, "cgroup/skb", 10) == 0;
+ 	bool is_cgroup_sk = strncmp(event, "cgroup/sock", 11) == 0;
++	bool is_vale_bpf = strncmp(event, "vale_bpf", 8) == 0;
+ 	size_t insns_cnt = size / sizeof(struct bpf_insn);
+ 	enum bpf_prog_type prog_type;
+ 	char buf[256];
+@@ -89,6 +90,8 @@ static int load_and_attach(const char *event, struct bpf_insn *prog, int size)
+ 		prog_type = BPF_PROG_TYPE_CGROUP_SKB;
+ 	} else if (is_cgroup_sk) {
+ 		prog_type = BPF_PROG_TYPE_CGROUP_SOCK;
++	} else if (is_vale_bpf) {
++		prog_type = BPF_PROG_TYPE_VALE_BPF;
+ 	} else {
+ 		printf("Unknown event '%s'\n", event);
+ 		return -1;
+@@ -103,7 +106,7 @@ static int load_and_attach(const char *event, struct bpf_insn *prog, int size)
+ 
+ 	prog_fd[prog_cnt++] = fd;
+ 
+-	if (is_xdp || is_perf_event || is_cgroup_skb || is_cgroup_sk)
++	if (is_xdp || is_perf_event || is_cgroup_skb || is_cgroup_sk || is_vale_bpf)
+ 		return 0;
+ 
+ 	if (is_socket) {
+@@ -549,7 +552,8 @@ static int do_load_bpf_file(const char *path, fixup_map_cb fixup_map)
+ 			    memcmp(shname_prog, "xdp", 3) == 0 ||
+ 			    memcmp(shname_prog, "perf_event", 10) == 0 ||
+ 			    memcmp(shname_prog, "socket", 6) == 0 ||
+-			    memcmp(shname_prog, "cgroup/", 7) == 0)
++			    memcmp(shname_prog, "cgroup/", 7) == 0 ||
++			    memcmp(shname_prog, "vale_bpf", 8) == 0)
+ 				load_and_attach(shname_prog, insns, data_prog->d_size);
+ 		}
+ 	}
+@@ -569,7 +573,8 @@ static int do_load_bpf_file(const char *path, fixup_map_cb fixup_map)
+ 		    memcmp(shname, "xdp", 3) == 0 ||
+ 		    memcmp(shname, "perf_event", 10) == 0 ||
+ 		    memcmp(shname, "socket", 6) == 0 ||
+-		    memcmp(shname, "cgroup/", 7) == 0)
++		    memcmp(shname, "cgroup/", 7) == 0 ||
++		    memcmp(shname, "vale_bpf", 8) == 0)
+ 			load_and_attach(shname, data->d_buf, data->d_size);
+ 	}
+ 
+diff --git a/samples/bpf/vale_bpf_kern.c b/samples/bpf/vale_bpf_kern.c
+new file mode 100644
+index 0000000..d2f8a72
+--- /dev/null
++++ b/samples/bpf/vale_bpf_kern.c
+@@ -0,0 +1,35 @@
++/* Copyright (c) 2016 PLUMgrid
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of version 2 of the GNU General Public
++ * License as published by the Free Software Foundation.
++ */
++#define KBUILD_MODNAME "foo"
++#include <uapi/linux/bpf.h>
++#include <linux/in.h>
++#include <linux/if_ether.h>
++#include <linux/if_packet.h>
++#include <linux/if_vlan.h>
++#include <linux/ip.h>
++#include <linux/ipv6.h>
++#include "bpf_helpers.h"
++
++struct bpf_map_def SEC("maps") rxcnt = {
++	.type = BPF_MAP_TYPE_PERCPU_ARRAY,
++	.key_size = 4,
++	.value_size = sizeof(long),
++	.max_entries = 1,
++};
++
++SEC("vale_bpf") 
++int vale_bpf_prog(struct vale_bpf_md *ctx)
++{
++  long *value;
++	value = bpf_map_lookup_elem(&rxcnt, &(long*){0});
++	if (value)
++		*value += 1;
++
++	return 1;
++}
++
++char _license[] SEC("license") = "GPL";
+diff --git a/samples/bpf/vale_bpf_loader.c b/samples/bpf/vale_bpf_loader.c
+new file mode 100644
+index 0000000..5cef304
+--- /dev/null
++++ b/samples/bpf/vale_bpf_loader.c
+@@ -0,0 +1,78 @@
++/* Copyright (c) 2016 PLUMgrid
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of version 2 of the GNU General Public
++ * License as published by the Free Software Foundation.
++ */
++#include <linux/bpf.h>
++#include <linux/if_link.h>
++#include <assert.h>
++#include <errno.h>
++#include <signal.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <stdint.h>
++#include <string.h>
++#include <fcntl.h>
++#include <unistd.h>
++#include <libgen.h>
++#include <net/if.h>
++#include <sys/ioctl.h>
++
++#include "bpf_load.h"
++#include "bpf_util.h"
++#include "libbpf.h"
++
++#include <net/netmap.h>
++
++#include <net/vale_bpf_native.h>
++
++void die(const char *msg) {
++  perror(msg);
++  exit(EXIT_FAILURE);
++}
++
++int main(int argc, char **argv)
++{
++  int err;
++	char *filename;
++  char *swname;
++
++	filename = strdup(argv[1]);
++  swname = strdup(argv[2]);
++
++	if (load_bpf_file(filename)) {
++		printf("%s", bpf_log_buf);
++		return 1;
++	}
++
++	if (!prog_fd[0]) {
++		printf("load_bpf_file: %s\n", strerror(errno));
++		return 1;
++	}
++
++  int nmfd;
++  nmfd = open("/dev/netmap", O_RDWR);
++  if (nmfd < 0) {
++    die("open");
++  }
++
++  struct nm_ifreq req;
++  memset(&req, 0, sizeof(req));
++  strcpy(req.nifr_name, swname);
++
++  struct vale_bpf_native_req *r = (struct vale_bpf_native_req *)req.data;
++  r->method = INSTALL_PROG;
++  r->len = sizeof(int);
++  r->ufd = prog_fd[0];
++
++  err = ioctl(nmfd, NIOCCONFIG, &req);
++  if (err < 0) {
++    die("ioctl NIOCCONFIG");
++  }
++
++  free(filename);
++  free(swname);
++
++	return 0;
++}

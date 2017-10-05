@@ -78,7 +78,7 @@ $ make
 $ insmod ./vale-bpf-vale0.ko
 ```
 
-### Loading eBPF Program
+### Loading eBPF program
 Now module is loaded to vale0. However, eBPF program is not yet loaded.
 You need to load eBPF program. For that, you can use apps/prog-loader/prog-loader.c
 
@@ -91,9 +91,36 @@ $ ./prog-loader -s vale0: -p <path to your own eBPF program> -j(enable this flag
 Some example eBPF programs are available in apps/ebpf\_example. Please feel free to
 use that.
 
-## Random Notes
-Our eBPF VM codes are almost all based on uBPF(https://github.com/iovisor/ubpf).
-Thanks for that.
+<!--
+## Experimental Linux native eBPF support
+
+We have experimental support for Linux's native eBPF. Unlike our generic-ebpf, it can be integrated with
+other Linux's eBPF functionality like map, tail-call or object pinning and even with bcc toolchains.
+However, you need to modify kernel for using this. We currently only tested this for Linux-4.12. If you
+tested this with other virsions of kernel, please share your result :)
+
+### Installing modified kernel
+```
+$ wget https://github.com/YutaroHayakawa/linux/archive/v4.12-vale-bpf.zip
+$ unzip v4.12-vale-bpf.zip
+$ cd linux-4.12-vale-bpf
+```
+
+Now, please configure kernel as you like, but please enable eBPF related options.
+Note that if you want to use phisical NICs in netmap, you need to install NIC drivers
+as module.
+
+After configuration, compile kernel and modules.
+
+```
+$ make bzImage && make modules
+# make modules\_install && make headers\_install && make install
+# reboot now
+```
+
+### Installing your eBPF program
+
+-->
 
 ## License
 Copyright 2017, Yutaro Hayakawa. Licensed under the Apache License,

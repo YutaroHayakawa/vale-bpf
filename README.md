@@ -1,5 +1,5 @@
-# VALE BPF Extention Module
-VALE-BPF module is an extention of VALE software switch.
+# VALE BPF Extension Module
+VALE-BPF module is an extension of VALE software switch.
 
 This module makes VALE possible to program with eBPF.
 

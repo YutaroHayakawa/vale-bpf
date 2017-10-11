@@ -125,8 +125,3 @@ Recommend to install bcc(https://github.com/iovisor/bcc). Please see their
 $ cd apps/linux-native-apps
 # python prog-loader.py -a -s vale0: -p <your eBPF program source> -f <your eBPF function name> -t(enable this flag if you use tracing)
 ```
-
-### Examples
-
-- Examples for vale-bpf with generic-ebpf are in apps/vale-bpf
-- Examples for vale-bpf with Linux native ebpf are in apps/vale-bpf-native

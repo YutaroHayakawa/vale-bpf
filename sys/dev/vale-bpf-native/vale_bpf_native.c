@@ -1,17 +1,14 @@
 /*
  * Copyright 2017 Yutaro Hayakawa
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of version 2 of the GNU General Public
+ * License as published by the Free Software Foundation.
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
  */
 
 #include <linux/kernel.h>
@@ -21,6 +18,7 @@
 #include <linux/string.h>
 #include <linux/types.h>
 #include <linux/bpf.h>
+#include <linux/filter.h>
 #include <bsd_glue.h>
 
 #include <net/netmap.h>
@@ -28,23 +26,33 @@
 
 #include <net/vale_bpf_native.h>
 
-static struct bpf_prog *prog;
+/* 
+ * eBPF context struct for vale-bpf. This is conpatible with context
+ * struct for xdp(struct xdp_buff), so, we can load bpf program for
+ * vale-bpf as program for xdp.
+ */
+struct vale_bpf_buf {
+  void *data;
+  void *data_end;
+  void *data_hard_start; // unused
+};
+
+static struct bpf_prog *prog = NULL;
 
 static u_int vale_bpf_native_lookup(struct nm_bdg_fwd *ft, uint8_t *hint,
                              struct netmap_vp_adapter *vpna) {
   uint64_t ret;
-  struct vale_bpf_md md;
+  struct vale_bpf_buf vale_bpf;
 
-  md.pkt = ft->ft_buf;
-  md.pkt_len = ft->ft_len; 
+  vale_bpf.data = (void *)ft->ft_buf;
+  vale_bpf.data_end = (void *)(ft->ft_buf + (ptrdiff_t)ft->ft_len);
+  vale_bpf.data_hard_start = (void *)ft->ft_buf; // head room allocation is not supported
 
   if (prog) {
-    ret = bpf_prog_run_vale_bpf(prog, &md);
+    ret = bpf_prog_run_xdp(prog, (struct xdp_buff *)&vale_bpf);
   } else {
     ret = VALE_BPF_DROP;
   }
-
-  RD(1, "dst: %llu", ret);
 
   return (u_int)ret;
 }
@@ -57,7 +65,7 @@ static int vale_bpf_native_install_prog(int ufd) {
     prog = NULL;
   }
 
-  p = bpf_prog_get_type(ufd, BPF_PROG_TYPE_VALE_BPF);
+  p = bpf_prog_get_type(ufd, BPF_PROG_TYPE_XDP);
   if (IS_ERR(p)) {
     return PTR_ERR(p);
   }
@@ -128,6 +136,10 @@ static void vale_bpf_native_fini(void) {
 
   if (error) {
     D("failed to release VALE bridge %d", error);
+  }
+
+  if (prog) {
+    bpf_prog_put(prog);
   }
 
   D("Unloaded vale-bpf-native-" VALE_NAME);

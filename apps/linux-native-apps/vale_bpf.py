@@ -24,7 +24,7 @@ class VALE_BPF_REQ(Structure):
 class VALE_BPF(BPF):
 
     INSTALL_PROG=0
-    BPF.VALE_BPF = 13
+    BPF.VALE_BPF = BPF.XDP
     NIOCCONFIG = IOWR(ord('i'), 150, NM_IFREQ)
 
     def __init__(self, src_file='', hdr_file='',
@@ -58,21 +58,3 @@ class VALE_BPF(BPF):
         fcntl.ioctl(f, self.NIOCCONFIG, req)
 
         f.close()
-
-
-if __name__ == '__main__':
-    b = VALE_BPF(text="""
-        struct vale_bpf_md {
-            uint8_t *pkt;
-            uint16_t pkt_len;
-        };
-
-        unsigned long long test(struct vale_bpf_md *md) {
-          bpf_trace_printk("Got Packet!\\n");
-          return 255;
-        }
-        """)
-
-    b.attach_vale_bpf("vale0:", "test")
-
-    b.trace_print()

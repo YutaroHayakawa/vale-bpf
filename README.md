@@ -4,31 +4,40 @@ VALE-BPF module is an extension of VALE software switch.
 This module makes VALE possible to program with eBPF.
 
 ## Supported Platforms
-- Linux (Linux Native)
-- FreeBSD
+### FreeBSD
+FreeBSD has native support for netmap/VALE, so we can run vale-bpf only with generic-ebpf install.
 
-### Experimental Linux native eBPF support
+For programming, please see examples in **apps/vale-bpf/ebpf-examples**.
 
+### Linux 
+Since netmap/VALE and generic-ebpf works for Linux, we can run vale-bpf on Linux.
+
+For programming, please see examples in **apps/vale-bpf/ebpf-examples**.
+
+### Linux native
 We have experimental support for Linux's native eBPF(vale-bpf-native). Unlike our generic-ebpf, it can be integrated with
 other Linux's eBPF functionality like map, tail-call or object pinning and even with bcc toolchains.
 It's eBPF context struct (struct vale\_bpf\_md) is binary compatible with XDP's one. So, we can reuse
-verifier and (almost all) helper functions for XDP.
-
-#### Defference between XDP program and vale-bpf-native program
-
-XDP program returns "actions" which is like XDP\_DROP or XDP\_TX, 
-vale-bpf-native program returns "destination switch port number"
+verifier and (almost all) helper functions for XDP. Program you need to write is defferent from XDP's one. Please see examples in **apps/vale-bpf-native/ebpf-examples**.
 
 ## Requirements
 
-- generic-ebpf (https://github.com/YutaroHayakawa/generic-ebpf.git)
-  - don't need for Linux Native target
-- clang-3.7 or later (for compilation of C → eBPF program)
-- netmap (https://github.com/luigirizzo/netmap.git)
+### Common
+- netmap ([https://github.com/luigirizzo/netmap.git](https://github.com/luigirizzo/netmap.git))
+- clang-3.7 or later (for compilation of C -> eBPF program)
+
+### Linux and FreeBSD
+- generic-ebpf ([https://github.com/YutaroHayakawa/generic-ebpf.git](https://github.com/YutaroHayakawa/generic-ebpf.git))
+
+### Linux native
+- bcc ([https://github.com/iovisor/bcc](https://github.com/iovisor/bcc))
+
+
 
 ## Installation
 
-### Install netmap
+### Common
+#### Install netmap
 
 ```
 $ git clone https://github.com/luigirizzo/netmap.git
@@ -47,9 +56,10 @@ Create switch named vale0 and attach two interfaces
 # vale-ctl -a vale0:vi1 //attach interface 1 to vale0
 ```
 
-### Install generic-ebpf (for FreeBSD and Linux target)
+### FreeBSD and Linux
+#### Install generic-ebpf
 
-#### FreeBSD
+##### FreeBSD
 
 ```
 $ git clone https://github.com/YutaroHayakawa/generic-ebpf.git
@@ -58,7 +68,7 @@ $ make
 # kldload ./ebpf.ko
 ```
 
-#### Linux
+##### Linux
 
 ```
 $ git clone https://github.com/YutaroHayakawa/generic-ebpf.git
@@ -67,9 +77,9 @@ $ make
 # insmod ebpf.ko
 ```
 
-### Install vale-bpf (for FreeBSD and Linux target)
+#### Install vale-bpf
 
-#### FreeBSD
+##### FreeBSD
 
 ```
 $ export NSRC=<path to your netmap source>
@@ -78,10 +88,10 @@ $ export VALE_NAME=vale0
 $ git clone https://github.com/YutaroHayakawa/vale-bpf.git
 $ cd vale-bpf/sys/modules
 $ make
-$ kldload ./vale-bpf-vale0.ko
+# kldload ./vale-bpf-vale0.ko
 ```
 
-#### Linux
+##### Linux
 ```
 $ export NSRC=<path to your netmap source>
 $ export EBPFSRC=<path to your generic-ebpf source>
@@ -89,10 +99,10 @@ $ export VALE_NAME=vale0
 $ git clone https://github.com/YutaroHayakawa/vale-bpf.git
 $ cd vale-bpf/LINUX
 $ make
-$ insmod ./vale-bpf-vale0.ko
+# insmod ./vale-bpf-vale0.ko
 ```
 
-### Loading eBPF program (for FreeBSD and Linux target)
+#### Loading eBPF program
 Now module is loaded to vale0. However, eBPF program is not yet loaded.
 You need to load eBPF program. For that, you can use apps/prog-loader/prog-loader.c
 
@@ -102,10 +112,9 @@ $ make
 $ ./prog-loader -s vale0: -p <path to your own eBPF program> -j(enable this flag if you want to use jit)
 ```
 
-Some example eBPF programs are available in apps/ebpf\_example. Please feel free to
-use that.
+### Linux Native
 
-### Install vale-bpf-native (for Linux Native target)
+Note that your kernel need to configured for enabling eBPF and XDP. We strongly reccommend you to use jit for better performance.
 
 ```
 $ export NSRC=<path to your netmap source>
@@ -116,10 +125,7 @@ $ make
 # insmod vale-bpf-native-vale0.ko
 ```
 
-### Loading eBPF program (for Linux Native target)
-
-Recommend to install bcc(https://github.com/iovisor/bcc). Please see their
-[installation guide](https://github.com/iovisor/bcc/blob/master/INSTALL.md).
+#### Loading eBPF program
 
 ```
 $ cd apps/linux-native-apps

@@ -3,10 +3,10 @@ import argparse
 import commands
 import readline
 
-from vale_bpf import VALE_BPF
+from vale_bpf_native import VALE_BPF_NATIVE
 
 
-parser = argparse.ArgumentParser(description='vale-bpf-ctl')
+parser = argparse.ArgumentParser(description='vale-bpf-native program loader')
 parser.add_argument('-s', '--switch')
 parser.add_argument('-a', '--attach', action='store_true')
 parser.add_argument('-p', '--program')
@@ -20,8 +20,8 @@ def do_trace(bpf):
 
 
 def attach(program, switch, func_name, trace):
-    b = VALE_BPF(src_file=program)
-    b.attach_vale_bpf(switch, func_name)
+    b = VALE_BPF_NATIVE(src_file=program)
+    b.attach_vale_bpf_native(switch, func_name)
 
     if trace:
         try:
@@ -33,8 +33,8 @@ def attach(program, switch, func_name, trace):
 
 
 def detach(switch):
-    b = VALE_BPF()
-    b.remove_vale_bpf(switch)
+    b = VALE_BPF_NATIVE()
+    b.remove_vale_bpf_native(switch)
 
 
 if __name__ == '__main__':

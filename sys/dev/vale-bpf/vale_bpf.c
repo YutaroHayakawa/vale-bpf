@@ -244,11 +244,9 @@ vale_bpf_loader(module_t mod, int type, void *data)
   switch (type) {
   case MOD_LOAD:
     error = vale_bpf_init();
-    D("Loaded vale-bpf-" VALE_NAME);
     break;
   case MOD_UNLOAD:
     vale_bpf_fini();
-    D("Unloaded vale-bpf-" VALE_NAME);
     break;
   default:
     error = EINVAL;

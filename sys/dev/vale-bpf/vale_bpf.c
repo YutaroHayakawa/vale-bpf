@@ -52,7 +52,7 @@
 #include <sys/ebpf.h>
 #include <sys/ebpf_types.h>
 
-#include <net/vale_bpf.h>
+#include <net/vale_bpf_proto.h>
 
 struct vale_bpf_ctx {
     uint8_t *buf;

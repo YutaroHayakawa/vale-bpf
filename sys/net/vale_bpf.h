@@ -1,20 +1,23 @@
-#ifndef _VALE_BPF_H_
-#define _VALE_BPF_H_
+#ifndef _VALE_BPF_COMMON_H_
+#define _VALE_BPF_COMMON_H_
 
-#define VALE_BPF_MAX_PROG_LEN 1024 * 1024
+#include <stdint.h>
 
-struct vale_bpf_req {
-  uint8_t method;
-  size_t len;
-  union {
-    struct vale_bpf_load_prog_data {
-      int jit;
-      void *code;
-      size_t code_len;
-    } prog_data;
-  };
+struct vale_bpf_ctx {
+  uint8_t *buf;
+  uint16_t len;
+  uint8_t *hint;
+  uint8_t sport;
 };
 
-enum vale_bpf_method { LOAD_PROG, __MAX_METHOD };
+struct vale_bpf_md {
+  uint32_t data;
+  uint32_t data_end;
+};
+
+enum vale_bpf_action {
+  VALE_BPF_DROP = 255,
+  VALE_BPF_BROADCAST = 254
+};
 
 #endif

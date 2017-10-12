@@ -24,12 +24,13 @@
 #include <net/netmap.h>
 #include <dev/netmap/netmap_kern.h> /* XXX Provide path in Makefile */
 
-#include <net/vale_bpf_native.h>
+#include <net/vale_bpf.h>
+#include <net/vale_bpf_proto.h>
 
 /* 
  * eBPF context struct for vale-bpf. This is conpatible with context
- * struct for xdp(struct xdp_buff), so, we can load bpf program for
- * vale-bpf as program for xdp.
+ * struct for XDP(struct xdp_buff), so, we can load bpf program for
+ * vale-bpf as program for XDP.
  */
 struct vale_bpf_buf {
   void *data;

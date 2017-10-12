@@ -81,7 +81,7 @@ class NM_IFREQ(Structure):
     ]
 
 
-class VALE_BPF_REQ(Structure):
+class VALE_BPF_NATIVE_REQ(Structure):
     _fields_ = [
         ('vale_name', c_char * 16),
         ('method', c_uint8),
@@ -107,10 +107,10 @@ class VALE_BPF_NATIVE(BPF):
         func = self.load_func(func_name, BPF.VALE_BPF)
         vale_name_bytes = bytes(vale_name) + b"\0" * (16 - len(vale_name))
 
-        req = VALE_BPF_REQ(vale_name_bytes,
-                           self.INSTALL_PROG,
-                           4,
-                           func.fd)
+        req = VALE_BPF_NATIVE_REQ(vale_name_bytes,
+                                  self.INSTALL_PROG,
+                                  4,
+                                  func.fd)
 
         f = open("/dev/netmap", "a+")
         fcntl.ioctl(f, self.NIOCCONFIG, req)
@@ -121,10 +121,10 @@ class VALE_BPF_NATIVE(BPF):
         f = open("/dev/netmap", "a+")
 
         vale_name_bytes = bytes(vale_name) + b"\0" * (16 - len(vale_name))
-        req = VALE_BPF_REQ(vale_name_bytes,
-                           self.INSTALL_PROG,
-                           4,
-                           -1)
+        req = VALE_BPF_NATIVE_REQ(vale_name_bytes,
+                                  self.INSTALL_PROG,
+                                  4,
+                                  -1)
         fcntl.ioctl(f, self.NIOCCONFIG, req)
 
         f.close()

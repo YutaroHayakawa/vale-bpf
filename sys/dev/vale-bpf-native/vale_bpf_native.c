@@ -24,7 +24,7 @@
 #include <net/netmap.h>
 #include <dev/netmap/netmap_kern.h> /* XXX Provide path in Makefile */
 
-#include <net/vale_bpf.h>
+#include <net/vale_bpf_native.h>
 #include <net/vale_bpf_proto.h>
 
 /* 
@@ -76,6 +76,8 @@ static int vale_bpf_native_install_prog(int ufd) {
   }
 
   prog = p;
+
+  D("Loaded bpf program");
 
   return 0;
 }

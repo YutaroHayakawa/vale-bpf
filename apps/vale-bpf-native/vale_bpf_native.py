@@ -2,6 +2,7 @@ from bcc import BPF
 from ctypes import *
 import fcntl
 import ctypes
+import os
 
 
 _IOC_NRBITS = 8
@@ -94,17 +95,19 @@ class VALE_BPF_NATIVE_REQ(Structure):
 class VALE_BPF_NATIVE(BPF):
 
     INSTALL_PROG=0
-    BPF.VALE_BPF = BPF.XDP
+    VALE_BPF_NATIVE = BPF.XDP
     NIOCCONFIG = IOWR(ord('i'), 150, NM_IFREQ)
 
     def __init__(self, src_file='', hdr_file='',
             text=None, cb=None, debug=0, cflags=[],
             usdt_contexts=[]):
-        super(VALE_BPF, self).__init__(src_file, hdr_file,
+
+        super(VALE_BPF_NATIVE, self).__init__(src_file, hdr_file,
                 text, cb, debug, cflags, usdt_contexts)
 
     def attach_vale_bpf_native(self, vale_name, func_name):
-        func = self.load_func(func_name, BPF.VALE_BPF)
+        # func = self.load_func(func_name, self.VALE_BPF_NATIVE)
+        func = self.load_func(func_name, self.VALE_BPF_NATIVE)
         vale_name_bytes = bytes(vale_name) + b"\0" * (16 - len(vale_name))
 
         req = VALE_BPF_NATIVE_REQ(vale_name_bytes,

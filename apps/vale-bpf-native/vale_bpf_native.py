@@ -82,19 +82,27 @@ class NM_IFREQ(Structure):
     ]
 
 
+class VALE_BPF_NATIVE_INSTALL_REQ(Structure):
+    _fields_ = [
+        ('prog_fd', c_int),
+        ('meta_map_fd', c_int)
+    ]
+
+
 class VALE_BPF_NATIVE_REQ(Structure):
     _fields_ = [
         ('vale_name', c_char * 16),
         ('method', c_uint8),
         ('len', c_size_t),
-        ('ufd', c_int),
-        ('_pad', c_char * (256 - 13))
+        ('install_req', VALE_BPF_NATIVE_INSTALL_REQ),
+        ('_pad', c_char * (256 - 17))
     ]
 
 
 class VALE_BPF_NATIVE(BPF):
 
     INSTALL_PROG=0
+    UNINSTALL_PROG=1
     VALE_BPF_NATIVE = BPF.XDP
     NIOCCONFIG = IOWR(ord('i'), 150, NM_IFREQ)
 
@@ -106,14 +114,21 @@ class VALE_BPF_NATIVE(BPF):
                 text, cb, debug, cflags, usdt_contexts)
 
     def attach_vale_bpf_native(self, vale_name, func_name):
-        # func = self.load_func(func_name, self.VALE_BPF_NATIVE)
         func = self.load_func(func_name, self.VALE_BPF_NATIVE)
+
+        try:
+            tbl = self.get_table("meta_map")
+        except:
+            print "Failed to get meta_map. Did you defined meta_map in your program?"
+
         vale_name_bytes = bytes(vale_name) + b"\0" * (16 - len(vale_name))
+
+        inst_req = VALE_BPF_NATIVE_INSTALL_REQ(func.fd, tbl.map_fd)
 
         req = VALE_BPF_NATIVE_REQ(vale_name_bytes,
                                   self.INSTALL_PROG,
-                                  4,
-                                  func.fd)
+                                  8,
+                                  inst_req)
 
         f = open("/dev/netmap", "a+")
         fcntl.ioctl(f, self.NIOCCONFIG, req)
@@ -125,9 +140,7 @@ class VALE_BPF_NATIVE(BPF):
 
         vale_name_bytes = bytes(vale_name) + b"\0" * (16 - len(vale_name))
         req = VALE_BPF_NATIVE_REQ(vale_name_bytes,
-                                  self.INSTALL_PROG,
-                                  4,
-                                  -1)
+                                  self.UNINSTALL_PROG)
         fcntl.ioctl(f, self.NIOCCONFIG, req)
 
         f.close()

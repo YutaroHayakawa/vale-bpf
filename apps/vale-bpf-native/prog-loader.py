@@ -17,6 +17,7 @@ parser.add_argument('-d', '--detach', action='store_true')
 def attach(program, switch, func_name):
     b = VALE_BPF_NATIVE(src_file=program)
     b.attach_vale_bpf_native(switch, func_name)
+    b.trace_print()
     b.cleanup()
 
 

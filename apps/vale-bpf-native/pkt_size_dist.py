@@ -8,7 +8,7 @@ b.attach_vale_bpf_native("vale0:", "pkt_size_dist")
 pkt_cnt = b.get_table("pkt_cnt")
 
 prev = [0] * 5
-print("Printing drops per IP protocol-number, hit CTRL+C to stop")
+print("Printing packet rate for each packet size ranges, hit CTRL+C to stop")
 while 1:
     try:
         for k in pkt_cnt.keys():
@@ -21,6 +21,7 @@ while 1:
 
                     s = ""
                     if i == 0:
+                        print ""
                         s = "0 - 300"
                     elif i == 1:
                         s = "301 - 600"

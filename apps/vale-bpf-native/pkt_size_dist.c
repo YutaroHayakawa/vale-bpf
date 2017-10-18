@@ -1,5 +1,5 @@
-#define KBUILD_MODNAME "foo"
 #include <uapi/linux/vale_bpf_native.h>
+#include "helpers.h"
 
 BPF_TABLE("percpu_array", uint32_t, uint32_t, pkt_cnt, 5);
 

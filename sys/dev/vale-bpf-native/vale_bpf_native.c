@@ -11,6 +11,7 @@
  * General Public License for more details.
  */
 
+#include <linux/bpf.h>
 #include <linux/kernel.h>
 #include <linux/cpumask.h>
 #include <linux/init.h>
@@ -39,15 +40,46 @@ struct vale_bpf_buf {
 };
 
 static struct bpf_prog *prog = NULL;
+static struct bpf_map *meta_map = NULL;
+
+/*
+ * FIXME: We can't make sure that type of this f.file->provate_data
+ * is really struct bpf_map or not, because we can't see bpf_map_fops
+ * from kernel module.
+ *
+ * So, if userspace program passes wrong file descripter, kernel
+ * maybe crashes.
+ */
+static struct bpf_map *get_meta_map_from_fd(int fd) {
+  struct fd f = fdget(fd);
+  struct bpf_map *map;
+
+  map = (struct bpf_map *)(f.file->private_data);
+
+  /* Increase refcount, but before it, we need to check limit */
+  if (atomic_inc_return(&map->refcnt) > 32768) {
+    atomic_dec(&map->refcnt);
+    return ERR_PTR(-EBUSY);
+  }
+
+  fdput(f);
+
+  return map;
+}
 
 static u_int vale_bpf_native_lookup(struct nm_bdg_fwd *ft, uint8_t *hint,
                              struct netmap_vp_adapter *vpna) {
-  uint64_t ret;
+  int err, ret;
   struct vale_bpf_buf vale_bpf;
 
   vale_bpf.data = (void *)ft->ft_buf;
   vale_bpf.data_end = (void *)(ft->ft_buf + (ptrdiff_t)ft->ft_len);
   vale_bpf.data_hard_start = (void *)ft->ft_buf; // head room allocation is not supported
+
+  if (meta_map) {
+    /* set src port */
+    err = meta_map->ops->map_update_elem(meta_map, &(uint32_t){0}, &(uint32_t){vpna->bdg_port}, 0);
+  }
 
   if (prog) {
     ret = bpf_prog_run_xdp(prog, (struct xdp_buff *)&vale_bpf);
@@ -58,27 +90,34 @@ static u_int vale_bpf_native_lookup(struct nm_bdg_fwd *ft, uint8_t *hint,
   return (u_int)ret;
 }
 
-static int vale_bpf_native_install_prog(int ufd) {
+static int vale_bpf_native_install_prog(int prog_fd, int meta_map_fd) {
   struct bpf_prog *p;
+  struct bpf_map *m;
 
-  if (ufd < 0) {
-    bpf_prog_put(prog);
-    prog = NULL;
-  }
-
-  p = bpf_prog_get_type(ufd, BPF_PROG_TYPE_XDP);
+  p = bpf_prog_get_type(prog_fd, BPF_PROG_TYPE_XDP);
   if (IS_ERR(p)) {
     return PTR_ERR(p);
   }
 
-  if (prog) {
-    bpf_prog_put(prog);
+  m = get_meta_map_from_fd(meta_map_fd);
+  if (IS_ERR(m)) {
+    bpf_prog_put(p);
+    return -1;
   }
 
   prog = p;
+  meta_map = m;
 
   D("Loaded bpf program");
 
+  return 0;
+}
+
+static int vale_bpf_native_uninstall_prog(void) {
+  bpf_prog_put(prog);
+  prog = NULL;
+  atomic_dec(&meta_map->refcnt);
+  meta_map = NULL;
   return 0;
 }
 
@@ -88,15 +127,19 @@ static int vale_bpf_native_config(struct nm_ifreq *req) {
 
   switch (r->method) {
     case INSTALL_PROG:
-      if (r->len != sizeof(int)) {
+      if (r->len != sizeof(struct vale_bpf_native_install_req)) {
         D("Invalid argument length");
         return -1;
       }
 
-      ret = vale_bpf_native_install_prog(r->ufd);
+      ret = vale_bpf_native_install_prog(r->install_req.prog_fd,
+          r->install_req.meta_map_fd);
       if (ret < 0) {
         D("Installation of bpf program failed");
       }
+      break;
+    case UNINSTALL_PROG:
+      ret = vale_bpf_native_uninstall_prog(); // always returns zero
       break;
     default:
       D("No such method");

@@ -1,5 +1,5 @@
 #include <uapi/linux/vale_bpf_native.h>
-#include "helpers.h"
+#include "meta_map.h"
 
 struct eth_addr {
   uint8_t addr[6];
@@ -8,10 +8,6 @@ struct eth_addr {
 struct eth {
   struct eth_addr addr[2];
 };
-
-static inline uint32_t *get_sport(void) {
-  return meta_map.lookup(&(uint32_t){META_MAP_SRCPORT});
-}
 
 BPF_TABLE("lru_hash", struct eth_addr, uint32_t, addr_table, 1024);
 

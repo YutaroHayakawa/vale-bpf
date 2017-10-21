@@ -12,13 +12,13 @@ For programming, please see examples in **apps/vale-bpf/ebpf-examples**.
 ### Linux 
 Since netmap/VALE and generic-ebpf works for Linux, we can run vale-bpf on Linux.
 
-For programming, please see examples in **apps/vale-bpf/ebpf-examples**.
+Please see examples in **apps/vale-bpf**.
 
 ### Linux native
 We have experimental support for Linux's native eBPF(vale-bpf-native). Unlike our generic-ebpf, it can be integrated with
 other Linux's eBPF functionality like map, tail-call or object pinning and even with bcc toolchains.
 It's eBPF context struct (struct vale\_bpf\_md) is binary compatible with XDP's one. So, we can reuse
-verifier and (almost all) helper functions for XDP. Program you need to write is defferent from XDP's one. Please see examples in **apps/vale-bpf-native/ebpf-examples**.
+verifier and (almost all) helper functions for XDP. Program you need to write is defferent from XDP's one. Please see examples in **apps/vale-bpf-native**.
 
 ## Requirements
 

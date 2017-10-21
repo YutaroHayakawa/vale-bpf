@@ -30,7 +30,17 @@ else
 		EXTRA_CFLAGS='$(EXTRA_CFLAGS)' KBUILD_EXTRA_SYMBOLS='$(EXTRA_SYMBOLS)' modules
 endif
 
+install_headers:
+	ln -s $(CURDIR)/../sys/net/vale_bpf_common.h \
+		$(LINUX_SRC)/include/uapi/linux/vale_bpf_common.h
+	ln -s $(CURDIR)/../sys/net/vale_bpf_native.h \
+		$(LINUX_SRC)/include/uapi/linux/vale_bpf_native.h
+
 clean:
 	make -C $(LINUX_SRC) M=$(CURDIR) clean
 	rm -rf $(SRC_DIR)/modules.order $(SRC_DIR)/Module.symvers \
 		$(SRC_DIR)/*.o $(SRC_DIR)/*.ko $(SRC_DIR)/.*.o.cmd $(SRC_DIR)/.*.ko.cmd
+
+clean_headers:
+	unlink $(LINUX_SRC)/include/uapi/linux/vale_bpf_common.h
+	unlink $(LINUX_SRC)/include/uapi/linux/vale_bpf_native.h

@@ -41,7 +41,7 @@ int learning_bridge(struct vale_bpf_md *md) {
     return VALE_BPF_DROP;
   }
 
-  src_port_p = get_sport();
+  src_port_p = meta_map.lookup(&(uint32_t){META_MAP_SRCPORT});
   if (!src_port_p) {
     return VALE_BPF_DROP;
   } else {

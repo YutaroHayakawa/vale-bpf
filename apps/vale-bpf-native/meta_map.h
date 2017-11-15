@@ -34,9 +34,4 @@ enum meta_map_idx {
   META_MAP_SRCPORT = 0
 };
 
-/* helper function for getting source port */
-static inline uint32_t *get_sport(void) {
-  return meta_map.lookup(&(uint32_t){META_MAP_SRCPORT});
-}
-
 #endif /* _META_MAP_H_ */

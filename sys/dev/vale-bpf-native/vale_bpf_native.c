@@ -190,6 +190,10 @@ static void vale_bpf_native_fini(void) {
     bpf_prog_put(prog);
   }
 
+  if (meta_map) {
+    atomic_dec(&meta_map->refcnt);
+  }
+
   D("Unloaded vale-bpf-native-" VALE_NAME);
 }
 

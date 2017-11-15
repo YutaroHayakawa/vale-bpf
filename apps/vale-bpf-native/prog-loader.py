@@ -35,7 +35,7 @@ def attach(program, switch, func_name):
 
 
 def detach(switch):
-    b = VALE_BPF_NATIVE()
+    b = VALE_BPF_NATIVE(text="int foo(void *ctx) { return 0; }")
     b.remove_vale_bpf_native(switch)
 
 

@@ -108,7 +108,7 @@ static int vale_bpf_native_install_prog(int prog_fd, int meta_map_fd) {
   prog = p;
   meta_map = m;
 
-  D("Loaded bpf program");
+  D("Loaded ebpf program to " VALE_NAME);
 
   return 0;
 }
@@ -118,6 +118,8 @@ static int vale_bpf_native_uninstall_prog(void) {
   prog = NULL;
   atomic_dec(&meta_map->refcnt);
   meta_map = NULL;
+
+  D("Unloaded ebpf program from " VALE_NAME);
   return 0;
 }
 

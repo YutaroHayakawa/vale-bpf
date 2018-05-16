@@ -18,11 +18,10 @@ EXTRA_CFLAGS:= \
 	-I$(NSRC) \
 	-I$(NSRC)/LINUX \
 	-I$(NSRC)/sys \
-	-I$(EBPFSRC)/sys \
 	-I$(PWD)
 
 EXTRA_SYMBOLS:= \
-	$(EBPFSRC)/LINUX/kernel/Module.symvers \
+	$(EBPFSRC)/Linux/kernel/Module.symvers \
 	$(NSRC)/Module.symvers
 
 

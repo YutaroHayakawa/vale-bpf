@@ -16,41 +16,12 @@
  * limitations under the License.
  */
 
-#if defined(linux)
-
-#include <linux/kernel.h>
-#include <linux/cpumask.h>
-#include <linux/init.h>
-#include <linux/module.h>
-#include <linux/string.h>
-#include <linux/types.h>
-#include <bsd_glue.h>
-
-#elif defined(__FreeBSD__)
-
-#include <sys/param.h>
-#include <sys/module.h>
-#include <sys/cdefs.h>
-#include <sys/kernel.h>
-#include <sys/conf.h>
-#include <sys/malloc.h>
-#include <sys/socket.h>
-#include <sys/selinfo.h>
-#include <sys/elf.h>
-#include <net/if.h>
-#include <net/if_var.h>
-#include <machine/bus.h>
-#include <sys/sysctl.h>
-
-#else
-
-#error Unsupported platform
-
-#endif
+#include <dev/ebpf/ebpf_platform.h>
+#include <dev/ebpf_dev/ebpf_dev_platform.h>
+#include <dev/vale-bpf/vale_bpf_platform.h>
 
 #include <net/netmap.h>
 #include <dev/netmap/netmap_kern.h>
-#include <dev/ebpf_dev/ebpf_dev_platform.h>
 #include <sys/ebpf_vm.h>
 
 #include <net/vale_bpf.h>
@@ -76,10 +47,14 @@ vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *ring_nr,
   md.ingress_port = vpna->bdg_port;
   md.ring_nr = *ring_nr;
 
-  if (jit_enable) {
-    ret = ebpf_exec_jit(vale_bpf_vm, &md, sizeof(md));
+  if (vale_bpf_vm) {
+    if (jit_enable) {
+      ret = ebpf_exec_jit(vale_bpf_vm, &md, sizeof(md));
+    } else {
+      ret = ebpf_exec(vale_bpf_vm, &md, sizeof(md));
+    }
   } else {
-    ret = ebpf_exec(vale_bpf_vm, &md, sizeof(md));
+    return NM_BDG_NOPORT;
   }
 
   // Error occurs inside the vm
@@ -212,16 +187,10 @@ static struct netmap_bdg_ops vale_bpf_ops = {
   NULL
 };
 
-static int
+int
 vale_bpf_init(void)
 {
   struct nmreq nmr;
-
-  // initialize vm
-  vale_bpf_vm = vale_bpf_create_vm();
-  if (vale_bpf_vm == NULL) {
-    return -ENOMEM;
-  }
 
   memset(&nmr, 0, sizeof(nmr));
   nmr.nr_version = NETMAP_API;
@@ -238,7 +207,7 @@ vale_bpf_init(void)
   return 0;
 }
 
-static void
+void
 vale_bpf_fini(void)
 {
   struct nmreq nmr;
@@ -258,43 +227,7 @@ vale_bpf_fini(void)
 
   D("Unloaded vale-bpf-" VALE_NAME);
 
-  ebpf_destroy(vale_bpf_vm);
-}
-
-#if defined(linux)
-
-module_init(vale_bpf_init);
-module_exit(vale_bpf_fini);
-MODULE_AUTHOR("Yutaro Hayakawa");
-MODULE_DESCRIPTION("VALE BPF Extension Module");
-MODULE_LICENSE("Apache2");
-
-#elif defined(__FreeBSD__)
-
-static int
-vale_bpf_loader(module_t mod, int type, void *data)
-{
-  int error = 0;
-
-  switch (type) {
-  case MOD_LOAD:
-    error = vale_bpf_init();
-    break;
-  case MOD_UNLOAD:
-    vale_bpf_fini();
-    break;
-  default:
-    error = -EINVAL;
+  if (vale_bpf_vm) {
+    vale_bpf_unload_prog();
   }
-
-  return -error;
 }
-
-DEV_MODULE(vale_bpf, vale_bpf_loader, NULL);
-MODULE_DEPEND(vale_bpf, netmap, 1, 1, 1);
-MODULE_DEPEND(vale_bpf, ebpf, 1, 1, 1);
-MODULE_DEPEND(vale_bpf, ebpf_dev, 1, 1, 1);
-
-#else
-#error Unsupported platform
-#endif

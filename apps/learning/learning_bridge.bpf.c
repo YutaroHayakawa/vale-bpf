@@ -20,7 +20,7 @@
 #include <sys/ebpf_uapi.h>
 #include <net/vale_bpf_uapi.h>
 
-DEFINE_MAP(ft, HASHTABLE, sizeof(uint64_t), sizeof(uint32_t), 256, 0);
+EBPF_DEFINE_MAP(ft, HASHTABLE, sizeof(uint64_t), sizeof(uint32_t), 256, 0);
 
 // Assume little endian
 #define le64toh(x) __builtin_bswap64(x)
@@ -42,7 +42,7 @@ learning_bridge(struct vale_bpf_md *md)
   smac >>= 16;
 
   if (((data[6] & 1) == 0)) {
-    error = map_update_elem(&ft, data + 6, &md->ingress_port, EBPF_ANY);
+    error = ebpf_map_update_elem(&ft, data + 6, &md->ingress_port, EBPF_ANY);
     if (error) {
       return VALE_BPF_DROP;
     }
@@ -50,7 +50,7 @@ learning_bridge(struct vale_bpf_md *md)
 
   uint32_t *dport;
   if ((data[0] & 1) == 0) {
-    dport = map_lookup_elem(&ft, &dmac, 0);
+    dport = ebpf_map_lookup_elem(&ft, &dmac, 0);
     if (!dport) {
       return VALE_BPF_DROP;
     }

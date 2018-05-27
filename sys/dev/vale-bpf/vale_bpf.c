@@ -32,7 +32,7 @@ static ebpf_file_t *running_prog = NULL;
 
 static uint32_t
 vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *ring_nr,
-    struct netmap_vp_adapter *vpna)
+    struct netmap_vp_adapter *vpna, void *pd)
 {
   uint64_t ret = NM_BDG_NOPORT;
   struct vale_bpf_md md;
@@ -47,14 +47,14 @@ vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *ring_nr,
   md.ingress_port = vpna->bdg_port;
   md.ring_nr = *ring_nr;
 
-  if (vale_bpf_vm) {
-    if (jit_enable) {
-      ret = ebpf_exec_jit(vale_bpf_vm, &md, sizeof(md));
-    } else {
-      ret = ebpf_exec(vale_bpf_vm, &md, sizeof(md));
-    }
+  /*
+   * We don't have to check if vale_bpf_vm == NULL or not,
+   * because ebpf_exec_* returns UINT64_MAX in that case.
+   */
+  if (jit_enable) {
+    ret = ebpf_exec_jit(vale_bpf_vm, &md, sizeof(md));
   } else {
-    return NM_BDG_NOPORT;
+    ret = ebpf_exec(vale_bpf_vm, &md, sizeof(md));
   }
 
   // Error occurs inside the vm
@@ -78,15 +78,15 @@ vale_bpf_create_vm(void)
     return NULL;
   }
 
-  if (ebpf_register(ret, 0, "ebpf_map_update_elem", ebpf_map_update_elem)) {
+  if (ebpf_register(ret, 1, "ebpf_map_update_elem", ebpf_map_update_elem)) {
     goto err;
   }
 
-  if (ebpf_register(ret, 1, "ebpf_map_lookup_elem", ebpf_map_lookup_elem)) {
+  if (ebpf_register(ret, 2, "ebpf_map_lookup_elem", ebpf_map_lookup_elem)) {
     goto err;
   }
 
-  if (ebpf_register(ret, 2, "ebpf_map_delete_elem", ebpf_map_delete_elem)) {
+  if (ebpf_register(ret, 3, "ebpf_map_delete_elem", ebpf_map_delete_elem)) {
     goto err;
   }
 
@@ -190,16 +190,12 @@ static struct netmap_bdg_ops vale_bpf_ops = {
 int
 vale_bpf_init(void)
 {
-  struct nmreq nmr;
+  int error;
 
-  memset(&nmr, 0, sizeof(nmr));
-  nmr.nr_version = NETMAP_API;
-  strlcpy(nmr.nr_name, VALE_NAME, sizeof(nmr.nr_name));
-  strlcat(nmr.nr_name, ":", sizeof(nmr.nr_name));
-  nmr.nr_cmd = NETMAP_BDG_REGOPS;
-  if (netmap_bdg_ctl(&nmr, &vale_bpf_ops)) {
-    D("create a bridge named %s beforehand using vale-ctl", nmr.nr_name);
-    return -ENOENT;
+  error = netmap_bdg_regops(VALE_NAME":", &vale_bpf_ops, NULL, NULL);
+  if (error) {
+    D("create a bridge named %s beforehand using vale-ctl", VALE_NAME);
+    return error;
   }
 
   D("Loaded vale-bpf-" VALE_NAME);
@@ -210,19 +206,11 @@ vale_bpf_init(void)
 void
 vale_bpf_fini(void)
 {
-  struct nmreq nmr;
   int error;
-  struct netmap_bdg_ops tmp = {netmap_bdg_learning, NULL, NULL};
 
-  memset(&nmr, 0, sizeof(nmr));
-  nmr.nr_version = NETMAP_API;
-  strlcpy(nmr.nr_name, VALE_NAME, sizeof(nmr.nr_name));
-  strlcat(nmr.nr_name, ":", sizeof(nmr.nr_name));
-  nmr.nr_cmd = NETMAP_BDG_REGOPS;
-
-  error = netmap_bdg_ctl(&nmr, &tmp);
+  error = netmap_bdg_regops(VALE_NAME":", NULL, NULL, NULL);
   if (error) {
-    D("failed to release VALE bridge %d", error);
+    D("failed to release VALE bridge");
   }
 
   D("Unloaded vale-bpf-" VALE_NAME);

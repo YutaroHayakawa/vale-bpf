@@ -18,6 +18,13 @@
 
 #pragma once
 
+#include <sys/ebpf_uapi.h>
+
+enum vale_bpf_functions {
+  EBPF_FUNC_vale_bpf_debug_probe_point = __EBPF_COMMON_FUNCTIONS_MAX,
+  __VALE_BPF_FUNCTIONS_MAX
+};
+
 struct vale_bpf_md {
   uintptr_t data;
   uintptr_t data_end;
@@ -27,3 +34,6 @@ struct vale_bpf_md {
 
 #define VALE_BPF_BROADCAST 254
 #define VALE_BPF_DROP 255
+
+static EBPF_FUNC(void, vale_bpf_debug_probe_point, uint64_t, uint64_t,
+    uint64_t, uint64_t, uint64_t);

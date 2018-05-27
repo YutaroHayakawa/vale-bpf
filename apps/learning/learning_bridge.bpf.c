@@ -17,13 +17,13 @@
  */
 
 #include <stdint.h>
-#include <sys/ebpf_uapi.h>
 #include <net/vale_bpf_uapi.h>
 
-EBPF_DEFINE_MAP(ft, HASHTABLE, sizeof(uint64_t), sizeof(uint32_t), 256, 0);
+struct mac {
+  uint8_t _mac[6];
+} __attribute((packed));
 
-// Assume little endian
-#define le64toh(x) __builtin_bswap64(x)
+EBPF_DEFINE_MAP(ft, HASHTABLE, sizeof(struct mac), sizeof(uint32_t), 256, 0);
 
 uint32_t
 learning_bridge(struct vale_bpf_md *md)
@@ -36,13 +36,9 @@ learning_bridge(struct vale_bpf_md *md)
     return VALE_BPF_DROP;
   }
 
-  uint64_t smac, dmac;
-  dmac = le64toh(*(uint64_t *)(data)) & 0xffffffffffff;
-  smac = le64toh(*(uint64_t *)(data + 4));
-  smac >>= 16;
-
   if (((data[6] & 1) == 0)) {
-    error = ebpf_map_update_elem(&ft, data + 6, &md->ingress_port, EBPF_ANY);
+    error = ebpf_map_update_elem(&ft, (struct mac *)(data + 6),
+        &md->ingress_port, EBPF_ANY);
     if (error) {
       return VALE_BPF_DROP;
     }
@@ -50,12 +46,10 @@ learning_bridge(struct vale_bpf_md *md)
 
   uint32_t *dport;
   if ((data[0] & 1) == 0) {
-    dport = ebpf_map_lookup_elem(&ft, &dmac, 0);
-    if (!dport) {
-      return VALE_BPF_DROP;
+    dport = ebpf_map_lookup_elem(&ft, (struct mac *)data, 0);
+    if (dport) {
+      return *dport;
     }
-
-    return *dport;
   }
 
   return VALE_BPF_BROADCAST;

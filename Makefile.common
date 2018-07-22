@@ -1,0 +1,22 @@
+MAKE_ENV+=	UNAME_s="${UNAME_s}"
+MAKE_ARGS+=	DESTDIR="${.CURDIR}" VALE_NAME="${VALE_NAME}"
+
+SUBDIR=		$(SUBDIR_$(UNAME_s))
+SUBDIR_FreeBSD=	${VALE_BPF_KMODDIR} ${APPS_DIR}
+SUBDIR_Linux=	${SUBDIR_FreeBSD}
+
+all:
+	for D in ${SUBDIR}; do \
+		(cd $$D && ${MAKE_CMD} && ${MAKE_CMD} install); \
+	done
+CLEANFILES=	vale-bpf-${VALE_NAME}.ko
+
+load::
+	${KMODLOAD} ${.CURDIR}/vale-bpf-${VALE_NAME}.ko
+
+unload::
+	${KMODUNLOAD} vale-bpf-${VALE_NAME}.ko
+
+reload::
+	-${KMODUNLOAD} vale-bpf-${VALE_NAME}.ko
+	${KMODLOAD} ${.CURDIR}/vale-bpf-${VALE_NAME}.ko

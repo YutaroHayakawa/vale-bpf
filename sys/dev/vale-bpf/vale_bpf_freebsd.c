@@ -31,10 +31,11 @@ vale_bpf_loader(module_t mod, int type, void *data)
     vale_bpf_fini();
     break;
   default:
-    error = -EINVAL;
+    error = EINVAL;
+    break;
   }
 
-  return -error;
+  return error;
 }
 
 DEV_MODULE(vale_bpf, vale_bpf_loader, NULL);

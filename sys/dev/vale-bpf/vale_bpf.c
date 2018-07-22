@@ -42,8 +42,8 @@ vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *ring_nr,
     return NM_BDG_NOPORT;
   }
 
-  md.data = (uintptr_t)ft->ft_buf;
-  md.data_end = (uintptr_t)ft->ft_buf + ft->ft_len;
+  md.data = (uintptr_t)ft->ft_buf + ft->ft_offset;
+  md.data_end = (uintptr_t)md.data + ft->ft_len - ft->ft_offset;
   md.ingress_port = vpna->bdg_port;
   md.ring_nr = *ring_nr;
 
@@ -51,16 +51,16 @@ vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *ring_nr,
    * We don't have to check if vale_bpf_vm == NULL or not,
    * because ebpf_exec_* returns UINT64_MAX in that case.
    */
+
+  ebpf_epoch_enter();
+
   if (jit_enable) {
     ret = ebpf_exec_jit(vale_bpf_vm, &md, sizeof(md));
   } else {
     ret = ebpf_exec(vale_bpf_vm, &md, sizeof(md));
   }
 
-  // Error occurs inside the vm
-  if (ret == UINT64_MAX) {
-    return NM_BDG_NOPORT;
-  }
+  ebpf_epoch_exit();
 
   // eBPF changed ring index
   if (md.ring_nr != *ring_nr) {
@@ -180,7 +180,7 @@ err0:
 static int
 vale_bpf_config(struct nm_ifreq *req)
 {
-  int ret;
+  int ret = 0;
   struct vale_bpf_req *r = (struct vale_bpf_req *)req->data;
 
   switch (r->method) {
@@ -189,7 +189,6 @@ vale_bpf_config(struct nm_ifreq *req)
       break;
     case VALE_BPF_UNLOAD_PROG:
       vale_bpf_unload_prog();
-      ret = 0;
       break;
     default:
       ret = ENOTSUP;

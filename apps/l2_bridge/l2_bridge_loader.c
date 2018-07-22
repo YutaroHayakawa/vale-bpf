@@ -36,6 +36,7 @@
 #include "../utils/vale_bpf_elf_loader.h"
 
 static int end = 0;
+static char *vale_name = NULL;
 
 static void
 on_sigint(int sig)
@@ -43,10 +44,41 @@ on_sigint(int sig)
   end = 1;
 }
 
+#define PROG_NAME "l2_bridge.bpf.o"
+
+static void
+usage(void) {
+	printf("Usage: ./l2_bridge_loader -v <vale_name>\n");
+	exit(EXIT_FAILURE);
+}
+
 int
-main(void)
+main(int argc, char **argv)
 {
-  int nmfd, error;
+  int opt, nmfd, error;
+  size_t len;
+
+  while ((opt = getopt(argc, argv, "v:")) != -1) {
+	  switch (opt) {
+		case 'v':
+			len = strlen(optarg);
+			vale_name = malloc(len + 2);
+			if (vale_name == NULL) {
+				perror("malloc");
+				usage();
+			}
+			strcpy(vale_name, optarg);
+			vale_name[len] = ':';
+			vale_name[len + 1] = '\0';
+			break;
+		default:
+			usage();
+	  }
+  }
+
+  if (vale_name == NULL) {
+	  usage();
+  }
 
   nmfd = open("/dev/netmap", O_RDWR);
   if (nmfd < 0) {
@@ -55,38 +87,47 @@ main(void)
   }
 
   struct vale_bpf_info *info;
-  info = vale_bpf_load_elf("./learning_bridge.bpf.o");
+  info = vale_bpf_load_elf_start("./" PROG_NAME);
   if (!info) {
-    printf("Failed to load leaning_bridge.o\n");
+    printf("Failed to load " PROG_NAME "\n");
     exit(EXIT_FAILURE);
   }
 
-  if (info->progs[0].fd == 0) {
-    printf("There is no program in learning_bridge.o\n");
+  if (info->nprog == 0) {
+    printf("There is no program in " PROG_NAME "\n");
     exit(EXIT_FAILURE);
   }
 
-  error = vale_bpf_load_prog(nmfd, "vale0:", info->progs[0].fd);
+  int progfd = gbpf_load_prog((GBPFDriver *)info->driver,
+		  EBPF_PROG_TYPE_TEST, info->progs[0].prog,
+		  info->progs[0].prog_len);
+  if (progfd < 0) {
+	  perror("gbpf_load_prog");
+	  exit(EXIT_FAILURE);
+  }
+
+  error = vale_bpf_load_prog(nmfd, vale_name, progfd);
   if (error) {
-    printf("Failed to load program to vale0\n");
+    printf("Failed to load program to %s\n", vale_name);
     exit(EXIT_FAILURE);
   }
 
   signal(SIGINT, on_sigint);
 
-  printf("Running learning bridge on vale0, press Ctrl-C to finish\n");
+  printf("Running l2 bridge on vale0, press Ctrl-C to finish\n");
   while (!end) {
     sleep(1);
   }
 
-  error = vale_bpf_unload_prog(nmfd, "vale0:");
+  error = vale_bpf_unload_prog(nmfd, vale_name);
   if (error) {
-    printf("Failed to unload program from vale0\n");
+    printf("Failed to unload program from %s\n", vale_name);
     exit(EXIT_FAILURE);
   }
 
-  free(info);
+  vale_bpf_load_elf_done(info);
   close(nmfd);
+  free(vale_name);
 
   return EXIT_SUCCESS;
 }

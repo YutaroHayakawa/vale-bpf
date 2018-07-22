@@ -27,10 +27,9 @@ struct prog_entry {
   char name[256];
   struct ebpf_inst *prog;
   uint32_t prog_len;
-  int fd;
 };
 
-#define NPROG_MAX 1
+#define NPROG_MAX 256
 #define NMAP_MAX 256
 
 struct vale_bpf_info {
@@ -38,6 +37,7 @@ struct vale_bpf_info {
   uint32_t nmap;
   struct prog_entry progs[NPROG_MAX];
   struct map_entry maps[NPROG_MAX];
+  EBPFDevDriver *driver;
 };
 
 static void
@@ -57,7 +57,13 @@ on_prog(GBPFElfWalker *walker, const char *name,
   }
 
   strcpy(info->progs[info->nprog].name, name);
-  info->progs[info->nprog].prog = prog;
+
+  info->progs[info->nprog].prog = calloc(1, prog_len); 
+  if (info->progs[info->nprog].prog == NULL) {
+	  return;
+	}
+
+  memcpy(info->progs[info->nprog].prog, prog, prog_len);
   info->progs[info->nprog].prog_len = prog_len;
   info->nprog++;
 }
@@ -83,11 +89,28 @@ on_map(GBPFElfWalker *walker, const char *name,
   info->nmap++;
 }
 
-static struct vale_bpf_info *
-vale_bpf_load_elf(char *elf_fname)
+static void
+vale_bpf_load_elf_done(struct vale_bpf_info *info)
 {
-  int error, nmfd, prog_fd;
-  EBPFDevDriver *driver;
+	for (uint32_t i = 0; i < info->nprog; i++) {
+		if (info->progs[i].prog != NULL) {
+			free(info->progs[i].prog);
+		}
+	}
+
+	for (uint32_t i = 0; i < info->nmap; i++) {
+		if (info->maps[i].fd > 0) {
+			close(info->maps[i].fd);
+		}
+	}
+
+	ebpf_dev_driver_destroy(info->driver);
+}
+
+static struct vale_bpf_info *
+vale_bpf_load_elf_start(char *elf_fname)
+{
+  int error;
   GBPFElfWalker walker;
   struct vale_bpf_info *ret;
 
@@ -95,10 +118,11 @@ vale_bpf_load_elf(char *elf_fname)
   if (!ret) {
     return NULL;
   }
+
   memset(ret, 0, sizeof(struct vale_bpf_info));
 
-  driver = ebpf_dev_driver_create();
-  if (!driver) {
+  ret->driver = ebpf_dev_driver_create();
+  if (!ret->driver) {
     free(ret);
     return NULL;
   }
@@ -107,24 +131,12 @@ vale_bpf_load_elf(char *elf_fname)
   walker.on_map = on_map;
   walker.data = ret;
 
-  error = gbpf_walk_elf(&walker, (GBPFDriver *)driver, elf_fname);
+  error = gbpf_walk_elf(&walker, (GBPFDriver *)ret->driver,
+		  elf_fname);
   if (error) {
-    free(ret);
-    ebpf_dev_driver_destroy(driver);
+    vale_bpf_load_elf_done(ret);
     return NULL;
   }
-
-  // Currently only handles one program
-  prog_fd = gbpf_load_prog((GBPFDriver *)driver, EBPF_PROG_TYPE_TEST,
-      ret->progs[0].prog, ret->progs[0].prog_len);
-  if (prog_fd < 0) {
-    free(ret);
-    ebpf_dev_driver_destroy(driver);
-    return NULL;
-  }
-  ret->progs[0].fd = prog_fd;
-
-  ebpf_dev_driver_destroy(driver);
 
   return ret;
 }

@@ -1,0 +1,23 @@
+PROG=	nologic_loader
+SRCS=	nologic_loader.c
+OBJS=	${SRCS:.c=.o}
+EBPFSRCS=	nologic.bpf.c
+EBPFOBJS=	${EBPFSRCS:.c=.o}
+CFLAGS+=	\
+	-O3 \
+	-I ${BASE}/sys \
+	-Wall
+LIBS+= \
+	-lgbpf \
+	-lelf \
+
+all: ${PROG} ${EBPFOBJS}
+
+${EBPFOBJS}: ${EBPFSRCS}
+	clang $(CFLAGS) -target bpf -c nologic.bpf.c
+
+${PROG}: ${OBJS}
+	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
+CLEANFILES+=	${PROG} ${OBJS} ${EBPFOBJS}
+
+install:

@@ -14,7 +14,7 @@ LIBS+= \
 all: ${PROG} ${EBPFOBJS}
 
 ${EBPFOBJS}: ${EBPFSRCS}
-	$(CC) -o $@ $(CFLAGS) -target bpf -c l2_bridge.bpf.c
+	clang $(CFLAGS) -target bpf -c l2_bridge.bpf.c
 
 ${PROG}: ${OBJS}
 	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LIBS)

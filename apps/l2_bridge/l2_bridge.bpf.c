@@ -61,8 +61,8 @@ learning_bridge_rthash(const uint8_t *addr)
 	return (c & (BUCKET_NUM - 1));
 }
 
-EBPF_DEFINE_MAP(last_smac_cache, PERCPU_ARRAY, sizeof(uint32_t), sizeof(uint64_t), 1, 0);
-EBPF_DEFINE_MAP(ft, PERCPU_ARRAY, sizeof(uint32_t), sizeof(struct hash_ent), BUCKET_NUM, 0);
+EBPF_DEFINE_MAP(last_smac_cache, ARRAY, sizeof(uint32_t), sizeof(uint64_t), 1, 0);
+EBPF_DEFINE_MAP(ft, ARRAY, sizeof(uint32_t), sizeof(struct hash_ent), BUCKET_NUM, 0);
 
 uint32_t
 learning_bridge(struct vale_bpf_md *md)
@@ -83,7 +83,8 @@ learning_bridge(struct vale_bpf_md *md)
   smac >>= 16;
 
   uint64_t *last_smac;
-  last_smac = ebpf_map_lookup_elem(&last_smac_cache, &(uint32_t){0});
+  uint32_t idx = 0;
+  last_smac = ebpf_map_lookup_elem(&last_smac_cache, &idx);
   if (last_smac == NULL) {
 		return VALE_BPF_DROP;
   }

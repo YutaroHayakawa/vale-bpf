@@ -1,6 +1,7 @@
 SRC_DIR:=../sys/dev/vale-bpf
+CURDIR:=$(PWD)
 
-vale-bpf-$(VALE_NAME)-objs := $(SRC_DIR)/vale_bpf.o
+vale-bpf-$(VALE_NAME)-objs += $(SRC_DIR)/vale_bpf.o
 
 obj-m:=vale-bpf-$(VALE_NAME).o
 
@@ -8,20 +9,25 @@ LINUX_SRC:=/lib/modules/$(shell uname -r)/build
 
 EXTRA_CFLAGS:= \
 	-O3 \
+	-D_KERNEL \
 	-DVALE_NAME=\"$(VALE_NAME)\" \
 	-DCONFIG_NETMAP \
 	-DCONFIG_NETMAP_VALE \
 	-std=gnu11 -Wno-declaration-after-statement \
-	-I$(CURDIR)/../sys/dev/vale-bpf \
-	-I$(CURDIR)/../sys \
 	-I$(LINUX_SRC)/include \
+	-I$(CURDIR) \
+	-I$(CURDIR)/../sys \
+	-I$(CURDIR)/../sys/dev/vale-bpf \
 	-I$(NSRC) \
 	-I$(NSRC)/LINUX \
 	-I$(NSRC)/sys \
-	-I$(PWD)
+	-I$(EBPFSRC)/sys \
+	-I$(EBPFSRC)/Linux/ebpf/kernel \
+	-I$(EBPFSRC)/Linux/ebpf_dev
 
 EXTRA_SYMBOLS:= \
-	$(EBPFSRC)/Linux/kernel/Module.symvers \
+	$(EBPFSRC)/Linux/ebpf/kernel/Module.symvers \
+	$(EBPFSRC)/Linux/ebpf_dev/Module.symvers \
 	$(NSRC)/Module.symvers
 
 

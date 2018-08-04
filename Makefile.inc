@@ -16,6 +16,9 @@ DEBUG_FLAGS=	-g
 VALE_NAME?=	vale0
 
 CFLAGS+=	${DEBUG_FLAGS}
+CFLAGS+=	-L${EBPFSRC}
+CFLAGS+=	-I${EBPFSRC}/sys
+CFLAGS+=	-I${EBPFSRC}/tools/libgbpf/include
 
 MAKE_CMD=	env ${MAKE_ENV} ${MAKE} ${.MAKEFLAGS} ${MAKE_ARGS}
 

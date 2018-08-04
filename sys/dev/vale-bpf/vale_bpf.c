@@ -70,20 +70,6 @@ vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *ring_nr,
   return (uint32_t)ret;
 }
 
-/*
- * Empty function for attaching FBT or Systemtap
- */
-void
-vale_bpf_debug_probe_point(uint64_t a, uint64_t b, uint64_t c,
-    uint64_t d, uint64_t e);
-
-void
-vale_bpf_debug_probe_point(uint64_t a, uint64_t b, uint64_t c,
-    uint64_t d, uint64_t e)
-{
-  return;
-}
-
 static struct ebpf_vm *
 vale_bpf_create_vm(void)
 {
@@ -101,10 +87,6 @@ vale_bpf_create_vm(void)
   }
 
   if (ebpf_register(ret, 3, "ebpf_map_delete_elem", ebpf_map_delete_elem)) {
-    goto err;
-  }
-
-  if (ebpf_register(ret, 4, "vale_bpf_debug_probe_point", vale_bpf_debug_probe_point)) {
     goto err;
   }
 

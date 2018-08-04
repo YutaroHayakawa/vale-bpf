@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-#include <dev/vale_bpf/vale_bpf_platform.h>
+#include <dev/vale-bpf/vale_bpf_platform.h>
 
 module_init(vale_bpf_init);
 module_exit(vale_bpf_fini);
 MODULE_AUTHOR("Yutaro Hayakawa");
 MODULE_DESCRIPTION("VALE BPF Extension Module");
-MODULE_LICENSE("Apache2");
+MODULE_LICENSE("Dual GPL/BSD");

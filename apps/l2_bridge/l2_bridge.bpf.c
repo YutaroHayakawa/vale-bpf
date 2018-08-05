@@ -27,7 +27,7 @@
 
 struct hash_ent {
 	uint64_t mac;
-	uint64_t ports;
+	uint32_t ports;
 };
 
 #define BUCKET_NUM	1024
@@ -48,7 +48,7 @@ do {                                                                    \
 static __attribute__((always_inline)) uint32_t
 learning_bridge_rthash(const uint8_t *addr)
 {
-	uint32_t a = 0x9e3779b9, b = 0x9e3779b9, c = 0; // hask key
+	uint32_t a = 0x9e3779b9, b = 0x9e3779b9, c = 0; // hash key
 
 	b += addr[5] << 8;
 	b += addr[4];
@@ -64,6 +64,9 @@ learning_bridge_rthash(const uint8_t *addr)
 EBPF_DEFINE_MAP(last_smac_cache, ARRAY, sizeof(uint32_t), sizeof(uint64_t), 1, 0);
 EBPF_DEFINE_MAP(ft, ARRAY, sizeof(uint32_t), sizeof(struct hash_ent), BUCKET_NUM, 0);
 
+// assume little endian
+#define le64toh(x) x
+
 uint32_t
 learning_bridge(struct vale_bpf_md *md)
 {
@@ -78,19 +81,18 @@ learning_bridge(struct vale_bpf_md *md)
   }
 
   uint64_t smac, dmac;
-  dmac = (*(uint64_t *)(data)) & 0xffffffffffff;
-  smac = (*(uint64_t *)(data + 4));
-  smac >>= 16;
+	dmac = le64toh(*(uint64_t *)(data)) & 0xffffffffffff;
+	smac = le64toh(*(uint64_t *)(data + 4));
+	smac >>= 16;
 
-  uint64_t *last_smac;
-  uint32_t idx = 0;
-  last_smac = ebpf_map_lookup_elem(&last_smac_cache, &idx);
+  uint64_t *last_smac =
+	  ebpf_map_lookup_elem(&last_smac_cache, &(uint32_t){0});
   if (last_smac == NULL) {
 		return VALE_BPF_DROP;
   }
 
   if (((data[6] & 1) == 0) && (*last_smac != smac)) {
-		sh = learning_bridge_rthash((uint8_t *)(data + 6));
+		sh = learning_bridge_rthash(data + 6);
 
 		ft_ent = ebpf_map_lookup_elem(&ft, &sh);
 		if (ft_ent == NULL) {

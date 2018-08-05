@@ -37,8 +37,9 @@ learning_bridge_rthash(const uint8_t *addr)
     return (c & (BUCKET_NUM - 1));
 }
 
-BPF_PERCPU_ARRAY(ft, struct hash_ent , BUCKET_NUM);
-BPF_PERCPU_ARRAY(last_smac_cache, uint64_t, 1);
+BPF_ARRAY(ft, struct hash_ent , BUCKET_NUM);
+BPF_ARRAY(last_smac_cache, uint64_t, 1);
+BPF_DEVMAP(tx_port, 1024);
 
 uint32_t
 xdp_l2_bridge(struct xdp_md *md)
@@ -81,11 +82,9 @@ xdp_l2_bridge(struct xdp_md *md)
       dh = learning_bridge_rthash(data);
       ft_ent = ft.lookup(&dh);
       if (ft_ent && ft_ent->mac == dmac) {
-      bpf_trace_printk("%p\n", ft_ent);
-          dst = bpf_redirect(ft_ent->ports, 0);
+          dst = tx_port.redirect_map(0, 0);
       }
   }
 
-  bpf_trace_printk("%u\n", dst);
   return dst;
 }

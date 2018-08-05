@@ -34,7 +34,7 @@ static uint32_t
 vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *ring_nr,
     struct netmap_vp_adapter *vpna, void *pd)
 {
-  uint64_t ret = NM_BDG_NOPORT;
+  uint32_t ret = NM_BDG_NOPORT;
   struct vale_bpf_md md;
 
   // FIXME: Drop packets from indirect buffer.
@@ -42,8 +42,8 @@ vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *ring_nr,
     return NM_BDG_NOPORT;
   }
 
-  md.data = (uintptr_t)ft->ft_buf + ft->ft_offset;
-  md.data_end = (uintptr_t)md.data + ft->ft_len - ft->ft_offset;
+  md.data = (uint8_t *)ft->ft_buf + ft->ft_offset;
+  md.data_end = (uint8_t *)md.data + (ft->ft_len - ft->ft_offset);
   md.ingress_port = vpna->bdg_port;
   md.ring_nr = *ring_nr;
 
@@ -118,18 +118,21 @@ vale_bpf_load_prog(int prog_fd)
   ebpf_file_t *f;
   error = ebpf_fget(ebpf_curthread(), prog_fd, &f);
   if (error) {
+    ebpf_error("ebpf_fget\n");
     return error;
   }
 
   struct ebpf_obj_prog *new_prog_obj =
     ebpf_objfile_get_container(f);
   if (!new_prog_obj) {
+    ebpf_error("ebpf_objfile_get_container\n");
     error = EINVAL;
     goto err0;
   }
 
   vale_bpf_vm = vale_bpf_create_vm();
   if (!vale_bpf_vm) {
+    ebpf_error("ebpf_create_vm\n");
     error = ENOMEM;
     goto err0;
   }
@@ -137,12 +140,14 @@ vale_bpf_load_prog(int prog_fd)
   error = ebpf_load(vale_bpf_vm, new_prog_obj->prog.prog,
       new_prog_obj->prog.prog_len);
   if (error) {
+    ebpf_error("ebpf_load\n");
     goto err1;
   }
 
   if (jit_enable) {
     ebpf_jit_fn fn = ebpf_compile(vale_bpf_vm);
     if (!fn) {
+    ebpf_error("ebpf_compile\n");
       goto err1;
     }
   }

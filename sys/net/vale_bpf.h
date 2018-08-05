@@ -37,8 +37,8 @@ struct vale_bpf_req {
 };
 
 struct vale_bpf_md {
-  uintptr_t data;
-  uintptr_t data_end;
+  void *data;
+  void *data_end;
   uint32_t ingress_port;
   uint8_t ring_nr;
 };

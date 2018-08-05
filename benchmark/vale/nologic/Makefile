@@ -1,10 +1,8 @@
-SRC_DIR:=../sys/dev/vale-bpf
-CURDIR:=$(PWD)
+SRC_DIR:=.
 
-vale-bpf-$(VALE_NAME)-objs += $(SRC_DIR)/vale_bpf.o
-vale-bpf-$(VALE_NAME)-objs += vale_bpf_linux.o
+nologic-$(VALE_NAME)-objs := $(SRC_DIR)/nologic.o
 
-obj-m:=vale-bpf-$(VALE_NAME).o
+obj-m:=nologic-$(VALE_NAME).o
 
 LINUX_SRC:=/lib/modules/$(shell uname -r)/build
 
@@ -18,21 +16,12 @@ EXTRA_CFLAGS:= \
 	-Wall \
 	-Wno-declaration-after-statement \
 	-I$(LINUX_SRC)/include \
-	-I$(CURDIR) \
-	-I$(CURDIR)/../sys \
-	-I$(CURDIR)/$(SRC_DIR) \
 	-I$(NSRC) \
 	-I$(NSRC)/LINUX \
-	-I$(NSRC)/sys \
-	-I$(EBPFSRC)/sys \
-	-I$(EBPFSRC)/Linux/ebpf/kernel \
-	-I$(EBPFSRC)/Linux/ebpf_dev
+	-I$(NSRC)/sys
 
 EXTRA_SYMBOLS:= \
-	$(EBPFSRC)/Linux/ebpf/kernel/Module.symvers \
-	$(EBPFSRC)/Linux/ebpf_dev/Module.symvers \
 	$(NSRC)/Module.symvers
-
 
 all:
 ifeq ($(VALE_NAME),)
@@ -43,7 +32,6 @@ else
 endif
 
 install:
-	install vale-bpf-$(VALE_NAME).ko $(DESTDIR)
 
 clean:
 	make -C $(LINUX_SRC) M=$(CURDIR) clean

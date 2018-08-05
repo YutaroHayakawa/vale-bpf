@@ -6,7 +6,11 @@ EBPFOBJS=	${EBPFSRCS:.c=.o}
 CFLAGS+=	\
 	-O3 \
 	-I ${BASE}/sys \
-	-Wall
+	-I ${EBPFSRC}/sys \
+	-I ${EBPFSRC}/tools/libgbpf/include \
+	-L ${EBPFSRC} \
+	-Wall \
+	-Wno-unused-command-line-argument
 LIBS+= \
 	-lgbpf \
 	-lelf \

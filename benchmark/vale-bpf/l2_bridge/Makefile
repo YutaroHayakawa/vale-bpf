@@ -1,4 +1,4 @@
-BASE=	../..
+BASE=	../../..
 .include "${BASE}/Makefile.inc"
 .include "Makefile.common"
 .if defined(SUBDIR) && !empty(SUBDIR)

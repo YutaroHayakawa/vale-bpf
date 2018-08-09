@@ -16,6 +16,8 @@
  * limitations under the License.
  */
 
+#if defined(linux)
+
 #include <linux/kernel.h>
 #include <linux/cpumask.h>
 #include <linux/init.h>
@@ -23,6 +25,26 @@
 #include <linux/string.h>
 #include <linux/types.h>
 #include <bsd_glue.h>
+
+#elif defined(__FreeBSD__)
+
+#include <sys/param.h>
+#include <sys/module.h>
+#include <sys/cdefs.h>
+#include <sys/kernel.h>
+#include <sys/conf.h>
+#include <sys/malloc.h>
+#include <sys/socket.h>
+#include <sys/selinfo.h>
+#include <sys/elf.h>
+#include <net/if.h>
+#include <net/if_var.h>
+#include <machine/bus.h>
+#include <sys/sysctl.h>
+
+#else
+#error Unsupported platform
+#endif
 
 #include <net/netmap.h>
 #include <dev/netmap/netmap_kern.h>
@@ -38,7 +60,7 @@ static struct netmap_bdg_ops nologic_ops = {
   .lookup = nologic_lookup,
 };
 
-int
+static int
 nologic_init(void)
 {
   int error;
@@ -54,7 +76,7 @@ nologic_init(void)
   return 0;
 }
 
-void
+static void
 nologic_fini(void)
 {
   int error;
@@ -67,8 +89,37 @@ nologic_fini(void)
   D("Unloaded nologic-" VALE_NAME);
 }
 
+#if defined(linux)
+
 module_init(nologic_init);
 module_exit(nologic_fini);
 MODULE_AUTHOR("Yutaro Hayakawa");
 MODULE_DESCRIPTION("Nologic");
 MODULE_LICENSE("Apache2");
+
+#elif defined(__FreeBSD__)
+
+static int
+nologic_loader(module_t mod, int type, void *data)
+{
+  int error = 0;
+
+  switch (type) {
+  case MOD_LOAD:
+    error = nologic_init();
+    break;
+  case MOD_UNLOAD:
+    nologic_fini();
+    break;
+  default:
+    error = EINVAL;
+    break;
+  }
+
+  return error;
+}
+
+DEV_MODULE(nologic, nologic_loader, NULL);
+MODULE_DEPEND(vale_bpf, netmap, 1, 1, 1);
+
+#endif

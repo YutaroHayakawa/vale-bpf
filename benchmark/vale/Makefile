@@ -1,4 +1,9 @@
-all clean install:
-	for D in ${SUBDIR}; do (cd $$D && make $@); done
-
-SUBDIR=	nologic
+BASE=	../..
+.include "${BASE}/Makefile.inc"
+.include "Makefile.common"
+.if defined(SUBDIR) && !empty(SUBDIR)
+clean: afterclean
+afterclean:
+	for D in ${SUBDIR}; do (cd $$D && ${MAKE_CMD} clean); done
+.PHONY: afterclean
+.endif

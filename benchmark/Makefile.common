@@ -1,0 +1,6 @@
+all clean install:
+	for D in ${SUBDIR}; do \
+		(cd $$D && ${MAKE_CMD} $@); \
+	done
+
+SUBDIR=	vale vale-bpf

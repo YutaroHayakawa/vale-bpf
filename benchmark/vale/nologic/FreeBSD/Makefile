@@ -12,7 +12,7 @@ CFLAGS+=	-DVALE_NAME=\"$(VALE_NAME)\"
 
 KMOD=	nologic-$(VALE_NAME)
 
-SRCS+=	nologic.c
+SRCS+=	../nologic.c
 
 realinstall:
 

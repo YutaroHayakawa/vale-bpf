@@ -9,8 +9,8 @@ CFLAGS+=	\
 	-I ${EBPFSRC}/sys \
 	-I ${EBPFSRC}/tools/libgbpf/include \
 	-L ${EBPFSRC} \
-	-Wall \
-	-Wno-unused-command-line-argument
+	-Wno-unused-command-line-argument \
+	-Wno-unused-parameter
 LIBS+= \
 	-lgbpf \
 	-lelf \

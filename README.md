@@ -37,6 +37,6 @@ Now module is loaded to vale0. However, eBPF program is not yet loaded.
 You need to load eBPF program. Below is an example of running sample application.
 
 ```
-$ cd apps/l2_bridge
-# ./l2_bridge -v vale0
+$ cd benchmark/vale-bpf/l2_bridge
+# ./l2_bridge_loader -v vale0
 ```

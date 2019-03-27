@@ -28,7 +28,7 @@
 
 static int jit_enable = 1;
 static struct ebpf_vm *vale_bpf_vm = NULL;
-static ebpf_file_t *running_prog = NULL;
+static ebpf_file *running_prog = NULL;
 
 static uint32_t
 vale_bpf_lookup(struct nm_bdg_fwd *ft, uint8_t *ring_nr,
@@ -115,7 +115,7 @@ vale_bpf_load_prog(int prog_fd)
     vale_bpf_unload_prog();
   }
 
-  ebpf_file_t *f;
+  ebpf_file *f;
   error = ebpf_fget(ebpf_curthread(), prog_fd, &f);
   if (error) {
     ebpf_error("ebpf_fget\n");

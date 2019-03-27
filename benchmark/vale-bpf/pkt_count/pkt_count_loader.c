@@ -116,10 +116,10 @@ main(int argc, char **argv)
 
   printf("Running nologic program on vale0, press Ctrl-C to finish\n");
 
-  int ncores = sysconf(_SC_NPROCESSORS_ONLN);
+	int ncores = sysconf(_SC_NPROCESSORS_ONLN);
+	long values[ncores];
+	long prev_sums[256] = {0};
   while (!end) {
-	  long values[ncores];
-
 	  for (uint32_t i = 0; i < 256; i++) {
 		  error = gbpf_map_lookup_elem((GBPFDriver *)info->driver,
 				  info->maps[0].fd, &i, values);
@@ -128,10 +128,14 @@ main(int argc, char **argv)
 			  exit(EXIT_FAILURE);
 		  }
 
-		  long sum = 0;
+		  long sum = 0, tmp = 0;
 		  for (int j = 0; j < ncores; j++) {
 			  sum += values[j];
 		  }
+
+		  tmp = sum;
+		  sum -= prev_sums[i];
+		  prev_sums[i] = tmp;
 
 		  if (sum != 0) {
 			  printf("%d: %ld pkt/s\n", i, sum);

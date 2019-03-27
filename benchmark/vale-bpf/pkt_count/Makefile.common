@@ -1,0 +1,27 @@
+PROG=	pkt_count_loader
+SRCS=	pkt_count_loader.c
+OBJS=	${SRCS:.c=.o}
+EBPFSRCS=	pkt_count.bpf.c
+EBPFOBJS=	${EBPFSRCS:.c=.o}
+CFLAGS+=	\
+	-O3 \
+	-I ${BASE}/sys \
+	-I ${EBPFSRC}/sys \
+	-I ${EBPFSRC}/tools/libgbpf/include \
+	-L ${EBPFSRC} \
+	-Wno-unused-command-line-argument \
+	-Wno-unused-parameter
+LIBS+= \
+	-lgbpf \
+	-lelf \
+
+all: ${PROG} ${EBPFOBJS}
+
+${EBPFOBJS}: ${EBPFSRCS}
+	clang $(CFLAGS) -target bpf -c pkt_count.bpf.c
+
+${PROG}: ${OBJS}
+	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
+CLEANFILES+=	${PROG} ${OBJS} ${EBPFOBJS}
+
+install:

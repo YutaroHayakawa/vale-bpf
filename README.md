@@ -1,3 +1,7 @@
+# Notice
+This repository won't be updated until [generic-ebpf](https://github.com/YutaroHayakawa/generic-ebpf.git)
+become stable.
+
 # VALE BPF Extension Module
 VALE-BPF module is an extension of VALE software switch.
 
